@@ -1,0 +1,566 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { TelaInicial } from './components/TelaInicial';
+import { Header } from './components/Header';
+import { Sidebar } from './components/Sidebar';
+import { DashboardView } from './components/DashboardView';
+import { ContagensView } from './components/ContagensView';
+import { GraficosView } from './components/GraficosView';
+import { ContagemExecucaoView } from './components/ContagemExecucaoView';
+import { NovaContagemModal } from './components/NovaContagemModal';
+import { DetalhesContagemModal } from './components/DetalhesContagemModal';
+import { EntradaCelularContagens } from './components/EntradaCelularContagens';
+import { SapFioriBoticarioView } from './components/SapFioriBoticarioView';
+import { INITIAL_ITEMS, INITIAL_SESSIONS } from './mockData';
+import { CountSession, InventoryItem, ProductPrice, SkuConversion } from './types';
+import { CheckCircle2, UserCheck } from 'lucide-react';
+import {
+  subscribeToSessions,
+  saveSessionToFirestore,
+  deleteSessionFromFirestore,
+  subscribeToInventoryTypes,
+  addInventoryTypeToFirestore,
+  subscribeToProductPrices,
+  saveProductPricesBatch,
+  subscribeToSkuConversions,
+  saveSkuConversionsBatch,
+  DEFAULT_INVENTORY_TYPES,
+  DEFAULT_PRODUCT_PRICES,
+  DEFAULT_SKU_CONVERSIONS
+} from './lib/inventoryService';
+
+export default function App() {
+  // Navigation mode: 'portal' (Tela Inicial) | 'mobile_contagem' (Entrada do Celular) | 'admin' (Painel PC) | 'counting' (Execução da Contagem)
+  const [currentMode, setCurrentMode] = useState<'portal' | 'mobile_contagem' | 'admin' | 'counting'>('portal');
+  const [returnMode, setReturnMode] = useState<'admin' | 'mobile_contagem'>('mobile_contagem');
+
+  // Sub-view inside Administração (PC): 'dashboard' | 'contagens' | 'graficos' | 'sap_fiori'
+  const [adminView, setAdminView] = useState<'dashboard' | 'contagens' | 'graficos' | 'sap_fiori'>('dashboard');
+
+  // Active session being counted in physical counting view
+  const [activeCountingSession, setActiveCountingSession] = useState<CountSession | null>(null);
+
+  // Active operator identifier
+  const [currentOperator, setCurrentOperator] = useState<string | null>(() => {
+    return localStorage.getItem('ceva_active_operator') || null;
+  });
+
+  // Sessions state (synced with Firestore)
+  const [sessions, setSessions] = useState<CountSession[]>(() => {
+    try {
+      const saved = localStorage.getItem('ceva_inventory_sessions');
+      return saved ? JSON.parse(saved) : INITIAL_SESSIONS;
+    } catch {
+      return INITIAL_SESSIONS;
+    }
+  });
+
+  // Inventory types state (synced with Firestore)
+  const [availableInventoryTypes, setAvailableInventoryTypes] = useState<string[]>(DEFAULT_INVENTORY_TYPES);
+
+  // Product prices map: SKU -> Unit Price R$ (synced with Firestore)
+  const [productPrices, setProductPrices] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    DEFAULT_PRODUCT_PRICES.forEach((p) => {
+      map[p.sku.toLowerCase()] = p.unitPrice;
+    });
+    return map;
+  });
+
+  // SKU conversions map: SKU -> Pieces per Box (synced with Firestore)
+  const [skuConversions, setSkuConversions] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    DEFAULT_SKU_CONVERSIONS.forEach((c) => {
+      map[c.sku.toLowerCase()] = c.piecesPerBox;
+    });
+    return map;
+  });
+
+  // Base items catalog
+  const [items, setItems] = useState<InventoryItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('ceva_inventory_items');
+      return saved ? JSON.parse(saved) : INITIAL_ITEMS;
+    } catch {
+      return INITIAL_ITEMS;
+    }
+  });
+
+  const [currentHub, setCurrentHub] = useState('CD Louveira - HUB 04');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Modals state
+  const [isNewSessionModalOpen, setIsNewSessionModalOpen] = useState(false);
+  const [selectedSessionForDetails, setSelectedSessionForDetails] = useState<CountSession | null>(null);
+
+  // Sync state & toasts
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState('Banco de dados ativo');
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Operator Prompt Modal
+  const [isPromptOperatorOpen, setIsPromptOperatorOpen] = useState(false);
+  const [promptOperatorInput, setPromptOperatorInput] = useState('');
+
+  // 1. Subscribe to Firestore Sessions
+  useEffect(() => {
+    const unsubscribe = subscribeToSessions((updatedSessions) => {
+      if (updatedSessions && updatedSessions.length > 0) {
+        setSessions(updatedSessions);
+        try {
+          localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedSessions));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 2. Subscribe to Firestore Inventory Types
+  useEffect(() => {
+    const unsubscribe = subscribeToInventoryTypes((types) => {
+      if (types && types.length > 0) {
+        setAvailableInventoryTypes(types);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 3. Subscribe to Firestore Product Prices
+  useEffect(() => {
+    const unsubscribe = subscribeToProductPrices((pricesMap) => {
+      if (pricesMap) {
+        setProductPrices(pricesMap);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 4. Subscribe to Firestore Sku Conversions (Peças por Caixa)
+  useEffect(() => {
+    const unsubscribe = subscribeToSkuConversions((conversionsMap) => {
+      if (conversionsMap) {
+        setSkuConversions(conversionsMap);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Persist current operator
+  useEffect(() => {
+    if (currentOperator) {
+      localStorage.setItem('ceva_active_operator', currentOperator);
+    } else {
+      localStorage.removeItem('ceva_active_operator');
+    }
+  }, [currentOperator]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const handleForceSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setIsSyncing(false);
+      setLastSyncTime('Sincronizado agora');
+      showToast('Banco de dados sincronizado com sucesso!');
+    }, 800);
+  };
+
+  // Called when user clicks "Startar Contagem" in NovaContagemModal
+  const handleCreateSession = async (newSession: CountSession) => {
+    // Update local state immediately
+    setSessions((prev) => [newSession, ...prev]);
+
+    // Save to Firestore
+    try {
+      await saveSessionToFirestore(newSession);
+    } catch (e) {
+      console.error('Failed to save session to Firestore', e);
+    }
+
+    // Set operator to the session responsible if not set
+    if (!currentOperator && newSession.responsible) {
+      setCurrentOperator(newSession.responsible);
+    }
+
+    // Navigate to Contagens tab as requested
+    setCurrentMode('admin');
+    setAdminView('contagens');
+    showToast(`Contagem "${newSession.name}" criada e salva no banco de dados!`);
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    // Local state update
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+
+    if (selectedSessionForDetails?.id === sessionId) {
+      setSelectedSessionForDetails(null);
+    }
+    if (activeCountingSession?.id === sessionId) {
+      setActiveCountingSession(null);
+      setCurrentMode('admin');
+    }
+
+    // Firestore deletion
+    try {
+      await deleteSessionFromFirestore(sessionId);
+    } catch (e) {
+      console.error('Failed to delete session from Firestore', e);
+    }
+
+    showToast('Contagem excluída com sucesso do banco de dados.');
+  };
+
+  const handleUpdateSessionStatus = async (
+    sessionId: string,
+    newStatus: CountSession['status']
+  ) => {
+    const updated = sessions.find((s) => s.id === sessionId);
+    if (updated) {
+      const newObj = { ...updated, status: newStatus };
+      setSessions((prev) =>
+        prev.map((s) => (s.id === sessionId ? newObj : s))
+      );
+      if (selectedSessionForDetails?.id === sessionId) {
+        setSelectedSessionForDetails(newObj);
+      }
+      try {
+        await saveSessionToFirestore(newObj);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    showToast(`Status atualizado para "${newStatus}".`);
+  };
+
+  // Start physical counting interface for a given session (with option to resume)
+  const handleStartCounting = (session: CountSession, source: 'admin' | 'mobile_contagem' = 'admin') => {
+    setActiveCountingSession(session);
+    setReturnMode(source);
+    setCurrentMode('counting');
+  };
+
+  // Update session SAP Fiori sync status
+  const handleUpdateSessionSapStatus = async (
+    sessionId: string,
+    sapSyncStatus: 'sincronizado' | 'pendente' | 'erro'
+  ) => {
+    let updatedObj: CountSession | null = null;
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id === sessionId) {
+          updatedObj = {
+            ...s,
+            sapSyncStatus,
+            sapLastSyncAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          };
+          return updatedObj;
+        }
+        return s;
+      })
+    );
+    if (updatedObj) {
+      try {
+        await saveSessionToFirestore(updatedObj);
+      } catch (e) {
+        console.error('Failed to update SAP status', e);
+      }
+    }
+  };
+
+  // Save count from ContagemExecucaoView (preserves pause/resume position & conversions)
+  const handleSaveCountFromExecution = async (
+    sessionId: string,
+    updatedItems: InventoryItem[],
+    newStatus: CountSession['status'],
+    lastIndex?: number
+  ) => {
+    const totalCounted = updatedItems.reduce((acc, it) => acc + (it.countedQty || 0), 0);
+    const totalExpected = updatedItems.reduce((acc, it) => acc + (it.expectedQty || 0), 0);
+    const accuracy =
+      totalExpected > 0
+        ? Math.min(100, Math.round((Math.min(totalCounted, totalExpected) / totalExpected) * 100))
+        : 100;
+
+    let updatedSessionObj: CountSession | null = null;
+
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id === sessionId) {
+          updatedSessionObj = {
+            ...s,
+            items: updatedItems,
+            status: newStatus,
+            accuracy,
+            lastPositionIndex: lastIndex !== undefined ? lastIndex : s.lastPositionIndex,
+          };
+          return updatedSessionObj;
+        }
+        return s;
+      })
+    );
+
+    if (updatedSessionObj) {
+      try {
+        await saveSessionToFirestore(updatedSessionObj);
+      } catch (e) {
+        console.error('Failed to save execution to Firestore', e);
+      }
+    }
+
+    showToast(`Contagem gravada no banco de dados! Status: ${newStatus}`);
+  };
+
+  // Add new inventory type
+  const handleAddNewInventoryType = async (typeName: string) => {
+    const clean = typeName.trim();
+    if (!clean) return;
+    setAvailableInventoryTypes((prev) => Array.from(new Set([...prev, clean])));
+    try {
+      await addInventoryTypeToFirestore(clean);
+      showToast(`Tipo de inventário "${clean}" adicionado ao banco de dados.`);
+    } catch (e) {
+      console.error('Failed to add inventory type', e);
+    }
+  };
+
+  // Save product prices batch from Excel
+  const handleSaveProductPrices = async (prices: ProductPrice[]) => {
+    await saveProductPricesBatch(prices);
+    const newMap = { ...productPrices };
+    prices.forEach((p) => {
+      newMap[p.sku.toLowerCase()] = p.unitPrice;
+    });
+    setProductPrices(newMap);
+    showToast(`${prices.length} preços atualizados no banco de dados!`);
+  };
+
+  // Save SKU conversions batch from Excel (peças por caixa)
+  const handleSaveSkuConversions = async (conversions: SkuConversion[]) => {
+    await saveSkuConversionsBatch(conversions);
+    const newMap = { ...skuConversions };
+    conversions.forEach((c) => {
+      newMap[c.sku.toLowerCase()] = c.piecesPerBox;
+    });
+    setSkuConversions(newMap);
+    showToast(`${conversions.length} regras de peças/caixa atualizadas no banco de dados!`);
+  };
+
+  // Handle entry from Portal to Contagens with operator request
+  const handleSelectColetorFromPortal = () => {
+    if (!currentOperator) {
+      setIsPromptOperatorOpen(true);
+    } else {
+      setCurrentMode('admin');
+      setAdminView('contagens');
+    }
+  };
+
+  const handleConfirmPromptOperator = (name: string) => {
+    const clean = name.trim();
+    if (!clean) return;
+    setCurrentOperator(clean);
+    setIsPromptOperatorOpen(false);
+    setPromptOperatorInput('');
+    setCurrentMode('admin');
+    setAdminView('contagens');
+    showToast(`Bem-vindo, ${clean}! Exibindo suas contagens vinculadas.`);
+  };
+
+  const activeCountsCount = sessions.filter((s) => s.status === 'Em Andamento').length;
+
+  return (
+    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex flex-col antialiased">
+      {/* 1. TELA INICIAL (Portal de Escolha) */}
+      {currentMode === 'portal' && (
+        <TelaInicial
+          onSelectAdmin={() => {
+            setCurrentMode('admin');
+            setAdminView('dashboard');
+          }}
+          onSelectColetor={() => {
+            setCurrentMode('mobile_contagem');
+          }}
+          activeCountsCount={activeCountsCount}
+        />
+      )}
+
+      {/* 2. ENTRADA EXCLUSIVA DE CONTAGEM NO CELULAR / COLETOR */}
+      {currentMode === 'mobile_contagem' && (
+        <EntradaCelularContagens
+          sessions={sessions}
+          currentOperator={currentOperator}
+          onSetCurrentOperator={(op) => {
+            setCurrentOperator(op);
+            if (op) {
+              try {
+                localStorage.setItem('ceva_active_operator', op);
+              } catch (e) {
+                console.error(e);
+              }
+            } else {
+              localStorage.removeItem('ceva_active_operator');
+            }
+          }}
+          onStartCounting={(sess) => handleStartCounting(sess, 'mobile_contagem')}
+          onNavigateToAdmin={() => {
+            setCurrentMode('admin');
+            setAdminView('contagens');
+          }}
+          onOpenDetailsModal={(sess) => setSelectedSessionForDetails(sess)}
+        />
+      )}
+
+      {/* 3. EXECUÇÃO DA CONTAGEM FÍSICA (com suporte a retomar contagem e conversão de caixas) */}
+      {currentMode === 'counting' && activeCountingSession && (
+        <ContagemExecucaoView
+          session={activeCountingSession}
+          skuConversions={skuConversions}
+          onBack={() => {
+            setCurrentMode(returnMode);
+            if (returnMode === 'admin') {
+              setAdminView('contagens');
+            }
+          }}
+          onSaveCount={handleSaveCountFromExecution}
+        />
+      )}
+
+      {/* 4. ADMINISTRAÇÃO (PC) - Dashboard, Contagens, Gráficos e Integração SAP Fiori */}
+      {currentMode === 'admin' && (
+        <div className="flex flex-1">
+          {/* Sidebar Navigation */}
+          <Sidebar
+            currentView={adminView}
+            onSelectView={(v) => setAdminView(v)}
+            isOpenMobile={isMobileSidebarOpen}
+            onCloseMobile={() => setIsMobileSidebarOpen(false)}
+            contagensCount={sessions.length}
+            onOpenMobileEntry={() => setCurrentMode('mobile_contagem')}
+          />
+
+          {/* Main Layout */}
+          <div className="lg:pl-64 flex flex-col flex-1 w-full min-w-0">
+            {/* Header */}
+            <Header
+              onToggleMobileSidebar={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+              onForceSync={handleForceSync}
+              isSyncing={isSyncing}
+              lastSyncTime={lastSyncTime}
+              onOpenMobileEntry={() => setCurrentMode('mobile_contagem')}
+            />
+
+            {/* Views in PC Admin with Smooth Tab Transitions */}
+            <main className="pt-16 flex-1 pb-12 overflow-hidden">
+              <AnimatePresence mode="wait">
+                {adminView === 'dashboard' && (
+                  <motion.div
+                    key="dashboard"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <DashboardView
+                      sessions={sessions}
+                      onOpenNewSessionModal={() => setIsNewSessionModalOpen(true)}
+                      onOpenDetailsModal={(sess) => setSelectedSessionForDetails(sess)}
+                      onDeleteSession={handleDeleteSession}
+                      onStartCounting={(s) => handleStartCounting(s, 'admin')}
+                      onNavigateToContagens={() => setAdminView('contagens')}
+                    />
+                  </motion.div>
+                )}
+
+                {adminView === 'contagens' && (
+                  <motion.div
+                    key="contagens"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <ContagensView
+                      sessions={sessions}
+                      currentOperator={currentOperator}
+                      onSetCurrentOperator={setCurrentOperator}
+                      onOpenNewSessionModal={() => setIsNewSessionModalOpen(true)}
+                      onOpenDetailsModal={(sess) => setSelectedSessionForDetails(sess)}
+                      onDeleteSession={handleDeleteSession}
+                      onUpdateStatus={handleUpdateSessionStatus}
+                      onStartCounting={(s) => handleStartCounting(s, 'admin')}
+                    />
+                  </motion.div>
+                )}
+
+                {adminView === 'graficos' && (
+                  <motion.div
+                    key="graficos"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <GraficosView
+                      sessions={sessions}
+                      productPrices={productPrices}
+                      skuConversions={skuConversions}
+                      availableTypes={availableInventoryTypes}
+                      onSaveProductPrices={handleSaveProductPrices}
+                      onSaveSkuConversions={handleSaveSkuConversions}
+                    />
+                  </motion.div>
+                )}
+
+                {adminView === 'sap_fiori' && (
+                  <motion.div
+                    key="sap_fiori"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <SapFioriBoticarioView
+                      sessions={sessions}
+                      onUpdateSessionSapStatus={handleUpdateSessionSapStatus}
+                      showToast={showToast}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </main>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Nova Contagem (adicionar tipos, caixas/peças e responsável) */}
+      <NovaContagemModal
+        isOpen={isNewSessionModalOpen}
+        onClose={() => setIsNewSessionModalOpen(false)}
+        availableItems={items}
+        availableInventoryTypes={availableInventoryTypes}
+        onAddNewInventoryType={handleAddNewInventoryType}
+        onCreateSession={handleCreateSession}
+      />
+
+      {/* Modal: Detalhes da Contagem */}
+      <DetalhesContagemModal
+        session={selectedSessionForDetails}
+        onClose={() => setSelectedSessionForDetails(null)}
+        onUpdateStatus={handleUpdateSessionStatus}
+      />
+
+      {/* Global Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs sm:text-sm animate-in fade-in slide-in-from-bottom-3 duration-200 border border-slate-700">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+    </div>
+  );
+}

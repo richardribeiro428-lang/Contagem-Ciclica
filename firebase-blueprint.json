@@ -1,0 +1,78 @@
+{
+  "entities": {
+    "CountSession": {
+      "title": "CountSession",
+      "description": "An inventory count session with items, responsible operator, status, and unit mode.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "name": { "type": "string" },
+        "responsible": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string", "enum": ["Pendente", "Em Andamento", "Concluída", "Divergência"] },
+        "sector": { "type": "string" },
+        "type": { "type": "string" },
+        "countUnit": { "type": "string", "enum": ["pecas", "caixas"] },
+        "itemsCount": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "items": { "type": "string", "description": "JSON stringified or array of items" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "responsible", "status", "type"]
+    },
+    "InventoryType": {
+      "title": "InventoryType",
+      "description": "Custom or standard inventory classification type.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "ProductPrice": {
+      "title": "ProductPrice",
+      "description": "Product unit monetary value for financial divergence calculation.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string" },
+        "unitPrice": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["sku", "unitPrice"]
+    },
+    "SkuConversion": {
+      "title": "SkuConversion",
+      "description": "Quantity of pieces per box for SKU unit conversion.",
+      "type": "object",
+      "properties": {
+        "sku": { "type": "string" },
+        "piecesPerBox": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["sku", "piecesPerBox"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": "CountSession",
+      "description": "Collection of inventory count sessions."
+    },
+    "/inventoryTypes/{typeId}": {
+      "schema": "InventoryType",
+      "description": "Collection of available inventory types."
+    },
+    "/productPrices/{sku}": {
+      "schema": "ProductPrice",
+      "description": "Catalog of product unit prices for divergence valuation."
+    },
+    "/skuConversions/{sku}": {
+      "schema": "SkuConversion",
+      "description": "Conversion factors (pieces per box) for SKUs."
+    }
+  }
+}

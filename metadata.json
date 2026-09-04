@@ -1,0 +1,8 @@
+{
+  "name": "CEVA Inventário",
+  "description": "Sistema de gestão de inventário CEVA Logistics com entrada móvel para contagem no celular/coletor, administração PC para criação de contagens e integração com SAP Fiori Grupo Boticário.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
