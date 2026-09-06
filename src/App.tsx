@@ -14,6 +14,7 @@ import { ImportarValoresView } from './components/ImportarValoresView';
 import { ConversaoCaixasView } from './components/ConversaoCaixasView';
 import { CustomCopyMenu } from './components/CustomCopyMenu';
 import { AlwaysFullscreenEnforcer } from './components/AlwaysFullscreenEnforcer';
+import { AdicionarAtalhoModal } from './components/AdicionarAtalhoModal';
 import { INITIAL_ITEMS, INITIAL_SESSIONS } from './mockData';
 import { CountSession, InventoryItem, ProductPrice, SkuConversion } from './types';
 import { CheckCircle2, UserCheck } from 'lucide-react';
@@ -115,6 +116,9 @@ export default function App() {
   // Operator Prompt Modal
   const [isPromptOperatorOpen, setIsPromptOperatorOpen] = useState(false);
   const [promptOperatorInput, setPromptOperatorInput] = useState('');
+
+  // Modal: Adicionar Atalho no Celular
+  const [isAdicionarAtalhoOpen, setIsAdicionarAtalhoOpen] = useState(false);
 
   // 1. Subscribe to Firestore Sessions
   useEffect(() => {
@@ -462,6 +466,7 @@ export default function App() {
             setCurrentMode('mobile_contagem');
           }}
           activeCountsCount={activeCountsCount}
+          onOpenAdicionarAtalho={() => setIsAdicionarAtalhoOpen(true)}
         />
       )}
 
@@ -486,6 +491,7 @@ export default function App() {
           onBackToHome={() => setCurrentMode('portal')}
           onOpenDetailsModal={(sess) => setSelectedSessionForDetails(sess)}
           onUpdateStatus={handleUpdateSessionStatus}
+          onOpenAdicionarAtalho={() => setIsAdicionarAtalhoOpen(true)}
         />
       )}
 
@@ -646,6 +652,12 @@ export default function App() {
         session={selectedSessionForDetails}
         onClose={() => setSelectedSessionForDetails(null)}
         onUpdateStatus={handleUpdateSessionStatus}
+      />
+
+      {/* Modal: Adicionar Atalho no Celular */}
+      <AdicionarAtalhoModal
+        isOpen={isAdicionarAtalhoOpen}
+        onClose={() => setIsAdicionarAtalhoOpen(false)}
       />
 
       {/* Execução permanente de tela cheia automática sem botão de alternância */}

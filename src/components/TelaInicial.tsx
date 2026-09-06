@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor, Smartphone, Boxes, LayoutDashboard, ArrowRight, CheckCircle2, ScanLine } from 'lucide-react';
+import { Monitor, Smartphone, Boxes, LayoutDashboard, ArrowRight, CheckCircle2, ScanLine, PlusSquare } from 'lucide-react';
 import { mobileAppIconUrl } from '../mockData';
 import { CevaLogo } from './CevaLogo';
 
@@ -7,17 +7,41 @@ interface TelaInicialProps {
   onSelectAdmin: () => void;
   onSelectColetor: () => void;
   activeCountsCount: number;
+  onOpenAdicionarAtalho?: () => void;
 }
 
 export const TelaInicial: React.FC<TelaInicialProps> = ({
   onSelectAdmin,
   onSelectColetor,
   activeCountsCount,
+  onOpenAdicionarAtalho,
 }) => {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0b1c30] flex flex-col justify-between antialiased">
       {/* Red corporate accent top line */}
       <div className="h-1.5 w-full bg-[#b80014]"></div>
+
+      {/* Top Banner for Shortcut Option */}
+      {onOpenAdicionarAtalho && (
+        <div className="bg-[#14202e] text-slate-300 py-2 px-4 text-xs border-b border-slate-700/60 shadow-xs">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
+              <span className="font-semibold text-white text-[11px] sm:text-xs truncate">
+                Usando no celular ou coletor? Adicione o atalho na tela inicial
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenAdicionarAtalho}
+              className="text-[11px] font-bold text-white bg-blue-600 hover:bg-blue-700 border border-blue-400/40 px-3 py-1 rounded-lg transition-all shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0"
+            >
+              <PlusSquare className="w-3.5 h-3.5 text-blue-200" />
+              <span>Adicionar Atalho no Celular</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Container */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-center">
