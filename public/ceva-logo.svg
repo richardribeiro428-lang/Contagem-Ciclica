@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 180" width="540" height="180" fill="none">
+  <!-- CEVA LOGISTICS Official Logo - 100% Transparent Background -->
+  <g fill="#0B1C38">
+    <!-- Letter 'c' -->
+    <path d="M 98 42 C 60 42 32 68 32 106 C 32 144 60 170 98 170 C 122 170 140 158 152 144 L 132 126 C 124 136 112 144 98 144 C 74 144 58 126 58 106 C 58 86 74 68 98 68 C 112 68 124 76 132 86 L 152 68 C 140 54 122 42 98 42 Z" />
+
+    <!-- Letter 'e' -->
+    <path d="M 215 106 C 215 72 192 42 162 42 C 130 42 108 68 108 106 C 108 144 130 170 162 170 C 185 170 202 158 212 143 L 192 128 C 185 138 175 144 162 144 C 144 144 134 132 133 118 L 215 118 C 215 114 215 110 215 106 Z M 134 94 C 137 80 148 68 162 68 C 176 68 186 80 188 94 L 134 94 Z" />
+
+    <!-- Letter 'v' -->
+    <path d="M 216 45 L 244 167 L 272 167 L 300 45 L 274 45 L 258 126 L 242 45 Z" />
+  </g>
+
+  <!-- Letter 'a' - Iconic CEVA Red Sail / Triangle -->
+  <g>
+    <!-- Red Sail Body -->
+    <path d="M 302 167 L 358 35 C 362 27 370 27 374 35 L 434 167 C 438 175 433 182 424 182 L 312 182 C 303 182 298 175 302 167 Z" fill="#E30613" />
+    
+    <!-- Aerodynamic white swoosh creating the ribbon curve inside the red sail -->
+    <path d="M 364 48 L 382 168 C 383 174 378 179 372 179 L 332 179 C 326 179 322 174 324 168 L 348 88 Z" fill="#FFFFFF" />
+  </g>
+
+  <!-- 'LOGISTICS' Wordmark in navy bold spaced capitals -->
+  <text x="325" y="215" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="34" font-weight="900" letter-spacing="9" fill="#0B1C38">LOGISTICS</text>
+</svg>

@@ -114,18 +114,20 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
       <header className="sticky top-0 z-30 bg-[#213145] text-white shadow-md border-b border-slate-700/60 px-4 py-2.5">
         <div className="max-w-md mx-auto flex items-center justify-between gap-2">
           {/* Logo & Title */}
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
             <img
-              src={mobileAppIconUrl}
-              alt="Ícone App Móvel"
-              className="w-8 h-8 rounded-xl object-cover shadow-xs border border-white/20 shrink-0"
+              src="/ceva-logo-white.png"
+              alt="CEVA Logistics"
+              className="h-7 sm:h-8 w-auto max-w-[130px] sm:max-w-[150px] object-contain shrink-0"
+              referrerPolicy="no-referrer"
             />
+            <div className="h-6 w-px bg-slate-700/80 shrink-0" />
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-extrabold tracking-tight text-white leading-tight flex items-center gap-1.5 truncate">
-                <span>Contagens Móveis</span>
+              <span className="text-xs font-extrabold tracking-tight text-white leading-tight truncate">
+                Contagens Móveis
               </span>
-              <span className="text-[10px] text-slate-300 font-medium leading-tight truncate">
-                CEVA Logistics • Coletor
+              <span className="text-[10px] text-slate-400 font-medium leading-tight truncate">
+                Coletor / Celular
               </span>
             </div>
           </div>

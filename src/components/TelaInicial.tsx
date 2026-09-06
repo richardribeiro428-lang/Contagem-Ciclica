@@ -24,11 +24,11 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-center">
         {/* Header Branding */}
         <div className="flex flex-col items-center text-center mb-8 sm:mb-12">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-center mb-4">
             <img
-              src={cevaLogo}
+              src="/ceva-logo.png"
               alt="CEVA Logistics"
-              className="h-10 sm:h-12 w-auto object-contain"
+              className="h-16 sm:h-22 w-auto max-w-[320px] sm:max-w-[380px] object-contain"
               referrerPolicy="no-referrer"
             />
           </div>
@@ -109,15 +109,8 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
           >
             <div>
               <div className="flex items-center justify-between gap-2 mb-4">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={mobileAppIconUrl}
-                    alt="Ícone Desenho App Móvel"
-                    className="w-14 h-14 rounded-2xl object-cover shadow-sm border border-slate-200 group-hover:scale-105 transition-transform"
-                  />
-                  <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <Smartphone className="w-5 h-5" />
-                  </div>
+                <div className="w-14 h-14 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <Smartphone className="w-7 h-7" />
                 </div>
                 <span className="text-[11px] font-bold uppercase tracking-wider bg-blue-100 text-blue-800 px-3 py-1 rounded-full border border-blue-200">
                   Celular / Coletor

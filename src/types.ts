@@ -85,3 +85,19 @@ export interface SystemImageResource {
   width?: number;
   height?: number;
 }
+
+export interface InventoryRecord {
+  id: string;
+  timestamp: string;
+  operator: string;
+  inventoryType: string;
+  deposit: string;
+  street: string;
+  column: string;
+  level: string;
+  position: string;
+  sku: string;
+  lot: string;
+  quantity: number;
+  boxCount?: number;
+}

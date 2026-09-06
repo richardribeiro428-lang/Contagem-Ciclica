@@ -12,8 +12,9 @@ const firebaseConfig = {
 };
 
 export const app = initializeApp(firebaseConfig);
-export const db = config.firestoreDatabaseId
-  ? getFirestore(app, config.firestoreDatabaseId)
+const customDbId = (config as Record<string, any>).firestoreDatabaseId;
+export const db = customDbId
+  ? getFirestore(app, customDbId)
   : getFirestore(app);
 
 // Connectivity health check as instructed in Firebase guidelines

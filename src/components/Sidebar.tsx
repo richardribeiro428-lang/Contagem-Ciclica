@@ -86,27 +86,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="flex flex-col">
           {/* Header Brand */}
-          <div className="h-16 px-4 flex items-center justify-between bg-[#1b2838] border-b border-slate-700/50">
-            <div className="flex items-center gap-3">
+          <div className="h-18 px-4 flex items-center justify-between bg-[#14202e] border-b border-slate-700/50">
+            <div className="flex flex-col justify-center min-w-0 pr-2">
               <img
-                src={cevaLogo}
-                alt="CEVA Logistics Logo"
-                className="h-8 w-auto object-contain"
+                src="/ceva-logo-white.png"
+                alt="CEVA Logistics"
+                className="h-8 w-auto max-w-[155px] object-contain object-left"
                 referrerPolicy="no-referrer"
               />
-              <div className="flex flex-col">
-                <span className="font-bold text-sm text-white tracking-tight leading-none">
-                  CEVA Inventário
-                </span>
-                <span className="text-[10px] uppercase tracking-widest text-slate-400 mt-1 font-semibold">
-                  Administração (PC)
-                </span>
-              </div>
+              <span className="text-[10px] uppercase tracking-wider text-slate-400 mt-1 font-semibold truncate">
+                Gestão de Inventário • PC
+              </span>
             </div>
 
             <button
               onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white"
+              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white shrink-0"
+              title="Fechar menu"
             >
               <X className="w-5 h-5" />
             </button>

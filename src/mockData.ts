@@ -1,6 +1,8 @@
 import { CountSession, InventoryItem, SystemImageResource } from './types';
 
-export const mobileAppIconUrl = '/app-icon.jpg';
+export const mobileAppIconUrl = '/ceva-logo.png';
+export const cevaLogoUrl = '/ceva-logo.png';
+export const cevaLogoWhiteUrl = '/ceva-logo-white.png';
 
 export const SYSTEM_IMAGES: SystemImageResource[] = [
   {
@@ -14,8 +16,8 @@ export const SYSTEM_IMAGES: SystemImageResource[] = [
   {
     id: 'ceva-logo',
     title: 'Logo Oficial CEVA Logistics',
-    description: 'Logotipo vetorial padrão utilizado no cabeçalho do WMS e relatórios oficiais.',
-    url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCDjrey_kwGpR-crxu_Ds9cwMt1reNddBlhuIkJvr6edGVy5qoHErwCRZHLnQRtPEVbkmsKO-zh5djTQC3kkyBIE6FNNlBOP6o9ynJdkOMLqUdJx75q7bYyzEb2Mhct0NMN8j5az6J6R9qu-txSVgfNE2XGm2uO69QSameHozxfed44H_wdk6DRzKLTu2xPe94tbk0Jra4s3WpFGwKeRMN-jJMpKYrFseVPR8WzIqb_iLMuMI4kxcK4',
+    description: 'Logotipo vetorial sem fundo utilizado no cabeçalho do WMS e relatórios oficiais.',
+    url: cevaLogoUrl,
     type: 'logo',
     tag: 'Identidade Visual',
   },
