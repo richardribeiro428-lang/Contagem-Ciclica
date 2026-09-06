@@ -12,6 +12,8 @@ import { DetalhesContagemModal } from './components/DetalhesContagemModal';
 import { EntradaCelularContagens } from './components/EntradaCelularContagens';
 import { ImportarValoresView } from './components/ImportarValoresView';
 import { ConversaoCaixasView } from './components/ConversaoCaixasView';
+import { CustomCopyMenu } from './components/CustomCopyMenu';
+import { MobileAppModeModal } from './components/MobileAppModeModal';
 import { INITIAL_ITEMS, INITIAL_SESSIONS } from './mockData';
 import { CountSession, InventoryItem, ProductPrice, SkuConversion } from './types';
 import { CheckCircle2, UserCheck } from 'lucide-react';
@@ -113,6 +115,9 @@ export default function App() {
   // Operator Prompt Modal
   const [isPromptOperatorOpen, setIsPromptOperatorOpen] = useState(false);
   const [promptOperatorInput, setPromptOperatorInput] = useState('');
+
+  // Mobile App Mode / Fullscreen Modal
+  const [isAppModeModalOpen, setIsAppModeModalOpen] = useState(false);
 
   // 1. Subscribe to Firestore Sessions
   useEffect(() => {
@@ -460,6 +465,7 @@ export default function App() {
             setCurrentMode('mobile_contagem');
           }}
           activeCountsCount={activeCountsCount}
+          onOpenAppGuide={() => setIsAppModeModalOpen(true)}
         />
       )}
 
@@ -484,6 +490,7 @@ export default function App() {
           onBackToHome={() => setCurrentMode('portal')}
           onOpenDetailsModal={(sess) => setSelectedSessionForDetails(sess)}
           onUpdateStatus={handleUpdateSessionStatus}
+          onOpenAppGuide={() => setIsAppModeModalOpen(true)}
         />
       )}
 
@@ -645,6 +652,15 @@ export default function App() {
         onClose={() => setSelectedSessionForDetails(null)}
         onUpdateStatus={handleUpdateSessionStatus}
       />
+
+      {/* Modal: Modo Aplicativo & Tela Cheia no Celular */}
+      <MobileAppModeModal
+        isOpen={isAppModeModalOpen}
+        onClose={() => setIsAppModeModalOpen(false)}
+      />
+
+      {/* Menu Corporativo Flutuante de Cópia (Elimina o menu do Google no celular ao clicar e segurar) */}
+      <CustomCopyMenu />
 
       {/* Global Toast Notification */}
       {toastMessage && (

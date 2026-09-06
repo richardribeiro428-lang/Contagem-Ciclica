@@ -15,12 +15,15 @@ import {
   ChevronRight,
   Filter,
   X,
-  Check
+  Check,
+  Copy,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CountSession } from '../types';
 import { SYSTEM_IMAGES, mobileAppIconUrl } from '../mockData';
 import { CevaLogo } from './CevaLogo';
+import { FullscreenToggle } from './FullscreenToggle';
 
 interface EntradaCelularContagensProps {
   sessions: CountSession[];
@@ -30,6 +33,7 @@ interface EntradaCelularContagensProps {
   onBackToHome: () => void;
   onOpenDetailsModal?: (session: CountSession) => void;
   onUpdateStatus?: (sessionId: string, newStatus: CountSession['status']) => void;
+  onOpenAppGuide?: () => void;
 }
 
 export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = ({
@@ -39,6 +43,7 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
   onStartCounting,
   onBackToHome,
   onUpdateStatus,
+  onOpenAppGuide,
 }) => {
   // Starts directly on 'todas' so all counts are immediately visible on entrance
   const [statusFilter, setStatusFilter] = useState<'todas' | 'pendente' | 'andamento' | 'concluida'>('todas');
@@ -128,21 +133,43 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
             </div>
           </div>
 
-          {/* Button: ONLY return to Home (Portal), NO Admin option */}
-          <button
-            type="button"
-            onClick={onBackToHome}
-            className="text-xs font-bold text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 active:bg-white/30 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
-            title="Voltar para a tela inicial"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Voltar ao Início</span>
-          </button>
+          {/* Buttons: Fullscreen & Return to Home */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <FullscreenToggle onOpenAppGuide={onOpenAppGuide} />
+            <button
+              type="button"
+              onClick={onBackToHome}
+              className="text-xs font-bold text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 active:bg-white/30 px-2.5 py-1.5 rounded-xl transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+              title="Voltar para a tela inicial"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span className="hidden xs:inline">Início</span>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Container */}
       <main className="max-w-md mx-auto w-full px-3 sm:px-4 py-3 flex-1 flex flex-col gap-3">
+        {/* Corporate Safe Notice */}
+        <div className="bg-[#14202e] text-slate-300 rounded-xl px-3 py-2 text-[11px] flex items-center justify-between border border-slate-700/60 shadow-xs">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              <strong>Modo Corporativo:</strong> Ao segurar, aparece apenas <strong>Copiar</strong> (Google bloqueado).
+            </span>
+          </div>
+          {onOpenAppGuide && (
+            <button
+              type="button"
+              onClick={onOpenAppGuide}
+              className="text-blue-300 hover:text-white font-bold underline text-[10px] shrink-0 ml-2 cursor-pointer"
+            >
+              Ocultar link https
+            </button>
+          )}
+        </div>
+
         {/* Operator Filter Section: Quick chips so user can filter by their name */}
         <div className="bg-white rounded-2xl p-3 shadow-xs border border-slate-200 space-y-2">
           <div className="flex items-center justify-between">
@@ -335,9 +362,15 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
                     {/* Top Row: Code, Unit & Status */}
                     <div className="flex items-center justify-between gap-1.5 mb-2">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-mono text-xs font-extrabold bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md">
-                          {session.code}
-                        </span>
+                        <div
+                          data-copyable={session.code}
+                          data-copy-label="Código da Contagem"
+                          className="flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-800 px-2 py-0.5 rounded-md cursor-pointer transition-colors"
+                          title="Clique ou segure para copiar o código"
+                        >
+                          <span className="font-mono text-xs font-extrabold">{session.code}</span>
+                          <Copy className="w-3 h-3 text-slate-400" />
+                        </div>
                         {isBoxMode ? (
                           <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded-md">
                             <Package className="w-3 h-3 text-amber-700" /> CX

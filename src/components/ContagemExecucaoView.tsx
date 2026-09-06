@@ -15,10 +15,12 @@ import {
   Barcode,
   RotateCcw,
   MapPin,
-  ScanLine
+  ScanLine,
+  Copy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CountSession, InventoryItem } from '../types';
+import { FullscreenToggle } from './FullscreenToggle';
 
 interface ContagemExecucaoViewProps {
   session: CountSession;
@@ -455,6 +457,8 @@ export const ContagemExecucaoView: React.FC<ContagemExecucaoViewProps> = ({
                 </span>
               )}
 
+              <FullscreenToggle />
+
               <button
                 type="button"
                 onClick={() => setShowItemList(!showItemList)}
@@ -574,7 +578,11 @@ export const ContagemExecucaoView: React.FC<ContagemExecucaoViewProps> = ({
                 className="space-y-3.5"
               >
                 {/* 1. Location Banner */}
-                <div className="bg-[#213145] text-white p-4 rounded-2xl shadow-sm border border-slate-700 flex items-center justify-between">
+                <div
+                  data-copyable={currentItem.location || ''}
+                  data-copy-label="Posição / Endereço"
+                  className="bg-[#213145] text-white p-4 rounded-2xl shadow-sm border border-slate-700 flex items-center justify-between group"
+                >
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-blue-500/20 text-blue-300">
                       <MapPin className="w-5 h-5" />
@@ -588,10 +596,31 @@ export const ContagemExecucaoView: React.FC<ContagemExecucaoViewProps> = ({
                       </div>
                     </div>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentItem.location) {
+                        navigator.clipboard?.writeText(currentItem.location);
+                        if ('vibrate' in navigator) {
+                          try { navigator.vibrate(30); } catch {}
+                        }
+                      }
+                    }}
+                    title="Clique ou segure para copiar endereço"
+                    className="px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 active:bg-white/30 text-slate-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline text-[11px]">Copiar</span>
+                  </button>
                 </div>
 
                 {/* 2. SKU Card (Apenas 1 vez, sem duplicar) */}
-                <div className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between">
+                <div
+                  data-copyable={currentItem.sku}
+                  data-copy-label="SKU do Produto"
+                  className="bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs flex items-center justify-between"
+                >
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 rounded-xl bg-blue-50 text-blue-600">
                       <Barcode className="w-5 h-5" />
@@ -600,8 +629,23 @@ export const ContagemExecucaoView: React.FC<ContagemExecucaoViewProps> = ({
                       <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">
                         Código do Produto
                       </span>
-                      <div className="text-base sm:text-lg font-mono font-black text-slate-900 leading-tight">
-                        SKU: {currentItem.sku}
+                      <div className="flex items-center gap-2">
+                        <div className="text-base sm:text-lg font-mono font-black text-slate-900 leading-tight">
+                          SKU: {currentItem.sku}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(currentItem.sku);
+                            if ('vibrate' in navigator) {
+                              try { navigator.vibrate(30); } catch {}
+                            }
+                          }}
+                          title="Copiar SKU"
+                          className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                       {/* Mostrar nome somente se existir e NÃO repetir o SKU */}
                       {Boolean(

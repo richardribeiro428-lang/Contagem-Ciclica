@@ -1,1 +1,29 @@
 @import "tailwindcss";
+
+/* Ocultar menu nativo de navegação/pesquisa do Google em toque longo */
+*, *::before, *::after {
+  -webkit-touch-callout: none !important; /* Desativa o menu nativo do iOS/Android que sugere busca no Google */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Permitir seleção de texto onde necessário para a nossa rotina de cópia corporativa */
+input, textarea, [contenteditable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Otimização para visual de aplicativo nativo no celular */
+html, body {
+  overscroll-behavior-y: contain;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Suporte a tela cheia e barra de status transparente */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}

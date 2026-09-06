@@ -7,17 +7,41 @@ interface TelaInicialProps {
   onSelectAdmin: () => void;
   onSelectColetor: () => void;
   activeCountsCount: number;
+  onOpenAppGuide?: () => void;
 }
 
 export const TelaInicial: React.FC<TelaInicialProps> = ({
   onSelectAdmin,
   onSelectColetor,
   activeCountsCount,
+  onOpenAppGuide,
 }) => {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0b1c30] flex flex-col justify-between antialiased">
       {/* Red corporate accent top line */}
       <div className="h-1.5 w-full bg-[#b80014]"></div>
+
+      {/* Top Banner for Mobile/App mode */}
+      {onOpenAppGuide && (
+        <div className="bg-[#14202e] text-slate-300 py-1.5 px-4 text-xs border-b border-slate-700/60">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="font-semibold text-white text-[11px] sm:text-xs">
+                Acessando pelo celular ou coletor?
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onOpenAppGuide}
+              className="text-[11px] font-bold text-blue-300 hover:text-white bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/30 px-2.5 py-0.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <span>Ocultar Barra HTTPS / Instalar App</span>
+              <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Container */}
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-center">
