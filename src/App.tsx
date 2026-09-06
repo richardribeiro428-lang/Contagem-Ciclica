@@ -13,7 +13,6 @@ import { EntradaCelularContagens } from './components/EntradaCelularContagens';
 import { ImportarValoresView } from './components/ImportarValoresView';
 import { ConversaoCaixasView } from './components/ConversaoCaixasView';
 import { CustomCopyMenu } from './components/CustomCopyMenu';
-import { AlwaysFullscreenEnforcer } from './components/AlwaysFullscreenEnforcer';
 import { INITIAL_ITEMS, INITIAL_SESSIONS } from './mockData';
 import { CountSession, InventoryItem, ProductPrice, SkuConversion } from './types';
 import { CheckCircle2, UserCheck } from 'lucide-react';
@@ -56,8 +55,18 @@ export default function App() {
   // Sub-view inside Administração (PC): 'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes'
   const [adminView, setAdminView] = useState<'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes'>('dashboard');
 
-  // Active session being counted in physical counting view
-  const [activeCountingSession, setActiveCountingSession] = useState<CountSession | null>(null);
+  // Active session being counted in physical counting view - restored from localStorage if browser reloaded
+  const [activeCountingSession, setActiveCountingSession] = useState<CountSession | null>(() => {
+    try {
+      const saved = localStorage.getItem('ceva_active_counting_session');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return null;
+  });
 
   // Active operator identifier
   const [currentOperator, setCurrentOperator] = useState<string | null>(() => {
@@ -196,9 +205,16 @@ export default function App() {
     }
   }, [currentMode]);
 
+  // Ensure fullscreen is completely exited on mount
+  useEffect(() => {
+    if (typeof document !== 'undefined' && document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   // Real synchronization: queries Firestore directly from server and pulls new contagens
@@ -218,14 +234,9 @@ export default function App() {
         } catch (e) {
           console.error(e);
         }
-        const now = new Date();
-        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        setLastSyncTime(`Atualizado às ${timeStr}`);
-        showToast(`Sincronizado com o computador! (${freshSessions.length} contagens no sistema)`);
       }
     } catch (err) {
       console.error('Erro ao sincronizar contagens diretamente:', err);
-      showToast('Recarregando página para sincronizar...');
       window.location.reload();
     } finally {
       setIsSyncing(false);
@@ -252,7 +263,7 @@ export default function App() {
     // Navigate to Contagens tab as requested
     setCurrentMode('admin');
     setAdminView('contagens');
-    showToast(`Contagem "${newSession.name}" criada e salva no banco de dados!`);
+    showToast(`Contagem "${newSession.name}" criada com sucesso!`);
   };
 
   const handleDeleteSession = async (sessionId: string) => {
@@ -274,7 +285,7 @@ export default function App() {
       console.error('Failed to delete session from Firestore', e);
     }
 
-    showToast('Contagem excluída com sucesso do banco de dados.');
+    showToast('Contagem excluída com sucesso.');
   };
 
   const handleUpdateSessionStatus = async (
@@ -316,11 +327,16 @@ export default function App() {
     }
 
     try {
-      const updatedList = sessions.map((s) => (s.id === sessionId ? newObj : s));
-      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedList));
       await saveSessionToFirestore(newObj);
     } catch (e) {
       console.error('Error updating session status in Firestore:', e);
+    }
+
+    try {
+      const updatedList = sessions.map((s) => (s.id === sessionId ? newObj : s));
+      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedList));
+    } catch (e) {
+      console.error('Error updating session status in localStorage:', e);
     }
 
     if (newStatus === 'Concluída') {
@@ -333,6 +349,11 @@ export default function App() {
   // Start physical counting interface for a given session (with option to resume)
   const handleStartCounting = (session: CountSession, source: 'admin' | 'mobile_contagem' = 'admin') => {
     setActiveCountingSession(session);
+    try {
+      localStorage.setItem('ceva_active_counting_session', JSON.stringify(session));
+    } catch (e) {
+      console.error(e);
+    }
     setReturnMode(source);
     setCurrentMode('counting');
   };
@@ -366,24 +387,44 @@ export default function App() {
       prev.map((s) => (s.id === sessionId ? updatedSessionObj : s))
     );
 
+    if (activeCountingSession?.id === sessionId) {
+      setActiveCountingSession(updatedSessionObj);
+    }
+
     if (selectedSessionForDetails?.id === sessionId) {
       setSelectedSessionForDetails(updatedSessionObj);
     }
 
+    // Persist active counting session so reloading browser NEVER loses the count
     try {
-      const updatedList = sessions.map((s) => (s.id === sessionId ? updatedSessionObj : s));
-      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedList));
+      if (newStatus === 'Concluída') {
+        localStorage.removeItem('ceva_active_counting_session');
+      } else {
+        localStorage.setItem('ceva_active_counting_session', JSON.stringify(updatedSessionObj));
+      }
+    } catch (e) {
+      console.error('LocalStorage error:', e);
+    }
+
+    // Direct Cloud Save to Firestore - ALWAYS executed first
+    try {
       await saveSessionToFirestore(updatedSessionObj);
     } catch (e) {
       console.error('Failed to save execution to Firestore', e);
+    }
+
+    // Local cache
+    try {
+      const updatedList = sessions.map((s) => (s.id === sessionId ? updatedSessionObj : s));
+      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedList));
+    } catch (e) {
+      console.error('Failed to cache sessions locally', e);
     }
 
     if (newStatus === 'Concluída') {
       showToast(`Contagem "${updatedSessionObj.name}" finalizada como Concluída!`);
     } else if (newStatus === 'Pendente') {
       showToast(`Contagem mantida como Pendente.`);
-    } else {
-      showToast(`Contagem em andamento atualizada no banco de dados.`);
     }
   };
 
@@ -549,6 +590,11 @@ export default function App() {
           session={activeCountingSession}
           skuConversions={skuConversions}
           onBack={() => {
+            try {
+              localStorage.removeItem('ceva_active_counting_session');
+            } catch (e) {
+              console.error(e);
+            }
             setCurrentMode(returnMode);
             if (returnMode === 'admin') {
               setAdminView('contagens');
@@ -701,9 +747,6 @@ export default function App() {
         onClose={() => setSelectedSessionForDetails(null)}
         onUpdateStatus={handleUpdateSessionStatus}
       />
-
-      {/* Execução permanente de tela cheia automática sem botão de alternância */}
-      <AlwaysFullscreenEnforcer />
 
       {/* Menu Corporativo Flutuante de Cópia (Elimina o menu do Google no celular ao clicar e segurar) */}
       <CustomCopyMenu />

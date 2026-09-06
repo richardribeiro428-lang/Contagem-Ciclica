@@ -169,10 +169,6 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
           <span>Inventário Operacional</span>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-semibold">Nuvem em Tempo Real (PC & Celular)</span>
-          </div>
           {onRefresh && (
             <button
               type="button"

@@ -259,9 +259,18 @@ export const ContagemExecucaoView: React.FC<ContagemExecucaoViewProps> = ({
 
     setItems(updated);
 
+    const nextIndex = advance && currentIndex < items.length - 1 ? currentIndex + 1 : currentIndex;
     if (advance && currentIndex < items.length - 1) {
-      setCurrentIndex((prev) => prev + 1);
+      setCurrentIndex(nextIndex);
     }
+
+    // Auto-save immediately to Firestore so data is NEVER lost and syncs live across devices!
+    try {
+      onSaveCount(session.id, updated, 'Em Andamento', nextIndex);
+    } catch (e) {
+      console.error('Error auto-saving item count:', e);
+    }
+
     return updated;
   };
 
