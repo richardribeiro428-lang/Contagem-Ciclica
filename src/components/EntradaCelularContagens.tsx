@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { CountSession } from '../types';
 import { SYSTEM_IMAGES, mobileAppIconUrl } from '../mockData';
+import { CevaLogo } from './CevaLogo';
 
 interface EntradaCelularContagensProps {
   sessions: CountSession[];
@@ -115,12 +116,7 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
         <div className="max-w-md mx-auto flex items-center justify-between gap-2">
           {/* Logo & Title */}
           <div className="flex items-center gap-3 min-w-0">
-            <img
-              src="/ceva-logo-white.png"
-              alt="CEVA Logistics"
-              className="h-7 sm:h-8 w-auto max-w-[130px] sm:max-w-[150px] object-contain shrink-0"
-              referrerPolicy="no-referrer"
-            />
+            <CevaLogo variant="light" size="sm" className="h-7 w-auto max-w-[130px] shrink-0" />
             <div className="h-6 w-px bg-slate-700/80 shrink-0" />
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-extrabold tracking-tight text-white leading-tight truncate">

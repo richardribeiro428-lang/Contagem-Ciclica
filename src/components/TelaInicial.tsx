@@ -1,6 +1,7 @@
 import React from 'react';
 import { Monitor, Smartphone, Boxes, LayoutDashboard, ArrowRight, CheckCircle2, ScanLine } from 'lucide-react';
-import { SYSTEM_IMAGES, mobileAppIconUrl } from '../mockData';
+import { mobileAppIconUrl } from '../mockData';
+import { CevaLogo } from './CevaLogo';
 
 interface TelaInicialProps {
   onSelectAdmin: () => void;
@@ -13,8 +14,6 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
   onSelectColetor,
   activeCountsCount,
 }) => {
-  const cevaLogo = SYSTEM_IMAGES.find((img) => img.type === 'logo')?.url || '';
-
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0b1c30] flex flex-col justify-between antialiased">
       {/* Red corporate accent top line */}
@@ -24,13 +23,8 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-8 sm:py-12 flex flex-col justify-center">
         {/* Header Branding */}
         <div className="flex flex-col items-center text-center mb-8 sm:mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <img
-              src="/ceva-logo.png"
-              alt="CEVA Logistics"
-              className="h-16 sm:h-22 w-auto max-w-[320px] sm:max-w-[380px] object-contain"
-              referrerPolicy="no-referrer"
-            />
+          <div className="flex items-center justify-center mb-5">
+            <CevaLogo variant="dark" size="xl" className="h-16 sm:h-20 w-auto max-w-[340px] sm:max-w-[420px]" />
           </div>
 
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white shadow-xs border border-slate-200 text-slate-700 text-xs font-semibold mb-3">

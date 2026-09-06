@@ -1,8 +1,8 @@
 import { CountSession, InventoryItem, SystemImageResource } from './types';
 
-export const mobileAppIconUrl = '/ceva-logo.png';
-export const cevaLogoUrl = '/ceva-logo.png';
-export const cevaLogoWhiteUrl = '/ceva-logo-white.png';
+export const mobileAppIconUrl = '/ceva-logo.svg';
+export const cevaLogoUrl = '/ceva-logo.svg';
+export const cevaLogoWhiteUrl = '/ceva-logo-white.svg';
 
 export const SYSTEM_IMAGES: SystemImageResource[] = [
   {

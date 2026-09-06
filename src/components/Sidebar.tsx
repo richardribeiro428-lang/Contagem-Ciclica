@@ -9,7 +9,7 @@ import {
   DollarSign,
   Package
 } from 'lucide-react';
-import { SYSTEM_IMAGES } from '../mockData';
+import { CevaLogo } from './CevaLogo';
 
 interface SidebarProps {
   currentView: 'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes';
@@ -28,8 +28,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   contagensCount,
   onOpenMobileEntry,
 }) => {
-  const cevaLogo = SYSTEM_IMAGES.find((img) => img.type === 'logo')?.url || '';
-
   const navItems = [
     {
       id: 'dashboard' as const,
@@ -88,12 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Header Brand */}
           <div className="h-18 px-4 flex items-center justify-between bg-[#14202e] border-b border-slate-700/50">
             <div className="flex flex-col justify-center min-w-0 pr-2">
-              <img
-                src="/ceva-logo-white.png"
-                alt="CEVA Logistics"
-                className="h-8 w-auto max-w-[155px] object-contain object-left"
-                referrerPolicy="no-referrer"
-              />
+              <CevaLogo variant="light" size="sm" className="h-7 max-w-[155px]" />
               <span className="text-[10px] uppercase tracking-wider text-slate-400 mt-1 font-semibold truncate">
                 Gestão de Inventário • PC
               </span>
