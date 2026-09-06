@@ -26,6 +26,7 @@ interface ParsedRow {
   posicao: string;
   sku: string;
   quantidade?: number;
+  descricao?: string;
   originalLine: string;
   isValid: boolean;
 }
@@ -87,11 +88,16 @@ PP-48-5055-460\t48062\t340`;
         const posicao = parts[0];
         const sku = parts[1];
         let quantidade: number | undefined = undefined;
+        let descricao = '';
 
-        if (parts.length >= 3) {
-          const parsedQty = parseFloat(parts[2].replace(',', '.'));
-          if (!isNaN(parsedQty)) {
-            quantidade = Math.max(0, Math.round(parsedQty));
+        // Search in column 3, 4, 5... for quantity and description
+        for (let i = 2; i < parts.length; i++) {
+          const cleanNum = parts[i].replace(',', '.').trim();
+          const parsed = parseFloat(cleanNum);
+          if (!isNaN(parsed) && quantidade === undefined) {
+            quantidade = Math.max(0, Math.round(parsed));
+          } else if (!descricao && isNaN(parsed)) {
+            descricao = parts[i];
           }
         }
 
@@ -99,6 +105,7 @@ PP-48-5055-460\t48062\t340`;
           posicao,
           sku,
           quantidade,
+          descricao,
           originalLine: line,
           isValid: Boolean(posicao && sku),
         });
@@ -173,15 +180,15 @@ PP-48-5055-460\t48062\t340`;
       return {
         id: `gen-${Date.now()}-${index}`,
         sku: row.sku.toUpperCase(),
-        name: existing ? existing.name : '',
-        barcode: existing ? existing.barcode : `${row.sku.replace(/[^0-9]/g, '') || Date.now()}`,
-        category: existing ? existing.category : 'Geral',
+        name: existing?.name || row.descricao || `Item ${row.sku.toUpperCase()}`,
+        barcode: existing?.barcode || `${row.sku.replace(/[^0-9]/g, '') || Date.now()}`,
+        category: existing?.category || 'Geral',
         expectedQty: row.quantidade !== undefined ? row.quantidade : 0,
         countedQty: 0,
-        unit: existing ? existing.unit : 'UN',
+        unit: existing?.unit || 'UN',
         location: row.posicao.toUpperCase(),
         batch: '',
-        imageUrl: existing?.imageUrl,
+        imageUrl: existing?.imageUrl || '',
         status: 'pending',
       };
     });

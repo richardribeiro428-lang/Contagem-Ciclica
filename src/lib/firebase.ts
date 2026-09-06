@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
 import config from '../../firebase-applet-config.json';
 
 const firebaseConfig = {
@@ -13,9 +13,12 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 const customDbId = (config as Record<string, any>).firestoreDatabaseId;
+
+// Initialize Firestore with auto-detect long polling to ensure mobile networks,
+// warehouse Wi-Fi, and corporate firewalls never drop communication
 export const db = customDbId
-  ? getFirestore(app, customDbId)
-  : getFirestore(app);
+  ? initializeFirestore(app, { experimentalAutoDetectLongPolling: true }, customDbId)
+  : initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 
 // Connectivity health check as instructed in Firebase guidelines
 export async function testFirestoreConnection(): Promise<boolean> {

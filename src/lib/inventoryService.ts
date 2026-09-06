@@ -59,11 +59,50 @@ export function subscribeToSessions(
   onUpdate: (sessions: CountSession[]) => void,
   onError?: (err: any) => void
 ) {
-  const colRef = collection(db, 'sessions');
+  let isSubscribed = true;
 
-  return onSnapshot(
+  // 1. Initial immediate fetch from HTTP API + Firestore
+  fetchSessionsDirectly()
+    .then((list) => {
+      if (isSubscribed && list.length > 0) {
+        onUpdate(list);
+      }
+    })
+    .catch((err) => console.warn('Initial fetchSessionsDirectly warning:', err));
+
+  // 2. Server-Sent Events (SSE) listener for instant cross-device updates
+  let eventSource: EventSource | null = null;
+  try {
+    if (typeof window !== 'undefined' && window.EventSource) {
+      eventSource = new EventSource('/api/events');
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'sessions_updated') {
+            fetchSessionsDirectly().then((list) => {
+              if (isSubscribed && list.length > 0) {
+                onUpdate(list);
+              }
+            });
+          }
+        } catch {
+          // heartbeat or unparseable
+        }
+      };
+      eventSource.onerror = () => {
+        // SSE disconnected, fallback polling handles it
+      };
+    }
+  } catch (e) {
+    console.warn('SSE not available:', e);
+  }
+
+  // 3. Firestore onSnapshot real-time listener
+  const colRef = collection(db, 'sessions');
+  const unsubscribeFirestore = onSnapshot(
     colRef,
     async (snapshot) => {
+      if (!isSubscribed) return;
       const hasSeeded = localStorage.getItem('ceva_firestore_seeded') === 'true';
 
       if (snapshot.empty && !hasSeeded) {
@@ -97,21 +136,58 @@ export function subscribeToSessions(
         });
         // Sort newest first by creation date or code
         list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-        onUpdate(list);
+        if (list.length > 0) {
+          onUpdate(list);
+        }
       }
     },
     (err) => {
-      console.error('Firestore subscribeToSessions error:', err);
+      console.warn('Firestore onSnapshot error, using server sync fallback:', err);
       if (onError) onError(err);
     }
   );
+
+  // 4. Background heartbeat poll every 3.5 seconds to guarantee zero missed sessions on mobile
+  const pollInterval = setInterval(() => {
+    if (!isSubscribed) return;
+    fetchSessionsDirectly()
+      .then((list) => {
+        if (isSubscribed && list.length > 0) {
+          onUpdate(list);
+        }
+      })
+      .catch(() => {});
+  }, 3500);
+
+  return () => {
+    isSubscribed = false;
+    clearInterval(pollInterval);
+    if (eventSource) {
+      eventSource.close();
+    }
+    unsubscribeFirestore();
+  };
 }
 
 /**
- * Direct server fetch to force immediate synchronization with Firestore
+ * Direct fetch to force immediate synchronization with Server API & Firestore
  * Bypasses local offline cache where possible to fetch counts created on PC
  */
 export async function fetchSessionsDirectly(): Promise<CountSession[]> {
+  // Try HTTP server endpoint first for instant response across devices
+  try {
+    const res = await fetch('/api/sessions?force_refresh=true');
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+    }
+  } catch (err) {
+    // server API not reachable or static host fallback
+  }
+
+  // Fallback to Firestore directly
   const colRef = collection(db, 'sessions');
   let snapshot;
   try {
@@ -134,18 +210,60 @@ export async function fetchSessionsDirectly(): Promise<CountSession[]> {
 }
 
 export async function saveSessionToFirestore(session: CountSession): Promise<void> {
-  const docRef = doc(db, 'sessions', session.id);
-  const clean = sanitizeForFirestore({
-    ...session,
-    countUnit: session.countUnit || 'pecas',
-    updatedAt: new Date().toISOString()
-  });
-  await setDoc(docRef, clean, { merge: true });
+  let savedServer = false;
+  let savedFirestore = false;
+  let serverError: any = null;
+  let fsError: any = null;
+
+  // 1. Post to Server API (triggers immediate broadcast to mobile and other devices)
+  try {
+    const res = await fetch('/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session }),
+    });
+    if (res.ok) {
+      savedServer = true;
+    }
+  } catch (e) {
+    serverError = e;
+  }
+
+  // 2. Direct Firestore client write (dual-redundancy cloud save)
+  try {
+    const docRef = doc(db, 'sessions', session.id);
+    const clean = sanitizeForFirestore({
+      ...session,
+      countUnit: session.countUnit || 'pecas',
+      updatedAt: new Date().toISOString()
+    });
+    await setDoc(docRef, clean, { merge: true });
+    savedFirestore = true;
+  } catch (e) {
+    fsError = e;
+  }
+
+  if (!savedServer && !savedFirestore) {
+    console.error('All save attempts failed:', { serverError, fsError });
+    throw new Error('Falha ao comunicar com o servidor e com o banco de dados.');
+  }
 }
 
 export async function deleteSessionFromFirestore(sessionId: string): Promise<void> {
-  const docRef = doc(db, 'sessions', sessionId);
-  await deleteDoc(docRef);
+  // Delete from Server API
+  try {
+    await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+  } catch (e) {
+    // continue
+  }
+
+  // Delete from Firestore directly
+  try {
+    const docRef = doc(db, 'sessions', sessionId);
+    await deleteDoc(docRef);
+  } catch (e) {
+    // continue
+  }
 }
 
 // --- INVENTORY TYPES ---

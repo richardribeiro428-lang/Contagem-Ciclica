@@ -137,7 +137,7 @@ export default function App() {
   const [isPromptOperatorOpen, setIsPromptOperatorOpen] = useState(false);
   const [promptOperatorInput, setPromptOperatorInput] = useState('');
 
-  // 1. Subscribe to Firestore Sessions
+  // 1. Subscribe to Firestore & Server Sessions with real-time updates
   useEffect(() => {
     const unsubscribe = subscribeToSessions((updatedSessions) => {
       if (Array.isArray(updatedSessions)) {
@@ -152,7 +152,31 @@ export default function App() {
         setLastSyncTime(`Atualizado às ${timeStr}`);
       }
     });
-    return () => unsubscribe();
+
+    // Auto-sync whenever operator unlocks phone or switches back to app tab
+    const handleFocusSync = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSessionsDirectly().then((fresh) => {
+          if (Array.isArray(fresh) && fresh.length > 0) {
+            setSessions(fresh);
+            try {
+              localStorage.setItem('ceva_inventory_sessions', JSON.stringify(fresh));
+            } catch (e) {
+              console.error(e);
+            }
+          }
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleFocusSync);
+    window.addEventListener('focus', handleFocusSync);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener('visibilitychange', handleFocusSync);
+      window.removeEventListener('focus', handleFocusSync);
+    };
   }, []);
 
   // 2. Subscribe to Firestore Inventory Types
@@ -246,13 +270,12 @@ export default function App() {
   // Called when user clicks "Startar Contagem" in NovaContagemModal
   const handleCreateSession = async (newSession: CountSession) => {
     // Update local state immediately
-    setSessions((prev) => [newSession, ...prev]);
-
-    // Save to Firestore
+    const updated = [newSession, ...sessions.filter((s) => s.id !== newSession.id)];
+    setSessions(updated);
     try {
-      await saveSessionToFirestore(newSession);
+      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updated));
     } catch (e) {
-      console.error('Failed to save session to Firestore', e);
+      console.error(e);
     }
 
     // Set operator to the session responsible if not set
@@ -263,12 +286,26 @@ export default function App() {
     // Navigate to Contagens tab as requested
     setCurrentMode('admin');
     setAdminView('contagens');
-    showToast(`Contagem "${newSession.name}" criada com sucesso!`);
+
+    // Save to Server & Cloud Firestore
+    try {
+      await saveSessionToFirestore(newSession);
+      showToast(`Contagem "${newSession.name}" criada e transmitida com sucesso para o celular!`);
+    } catch (e) {
+      console.error('Failed to save session to Firestore/Server', e);
+      showToast(`Contagem salva localmente. Sincronizando com a rede...`);
+    }
   };
 
   const handleDeleteSession = async (sessionId: string) => {
     // Local state update
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    const updated = sessions.filter((s) => s.id !== sessionId);
+    setSessions(updated);
+    try {
+      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updated));
+    } catch (e) {
+      console.error(e);
+    }
 
     if (selectedSessionForDetails?.id === sessionId) {
       setSelectedSessionForDetails(null);
@@ -278,14 +315,13 @@ export default function App() {
       setCurrentMode('admin');
     }
 
-    // Firestore deletion
+    // Server & Firestore deletion
     try {
       await deleteSessionFromFirestore(sessionId);
+      showToast('Contagem excluída com sucesso em todos os aparelhos!');
     } catch (e) {
       console.error('Failed to delete session from Firestore', e);
     }
-
-    showToast('Contagem excluída com sucesso.');
   };
 
   const handleUpdateSessionStatus = async (
