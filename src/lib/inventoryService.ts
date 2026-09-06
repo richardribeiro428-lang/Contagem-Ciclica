@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   getDocs,
+  getDocsFromServer,
   setDoc,
   deleteDoc,
   onSnapshot,
@@ -104,6 +105,32 @@ export function subscribeToSessions(
       if (onError) onError(err);
     }
   );
+}
+
+/**
+ * Direct server fetch to force immediate synchronization with Firestore
+ * Bypasses local offline cache where possible to fetch counts created on PC
+ */
+export async function fetchSessionsDirectly(): Promise<CountSession[]> {
+  const colRef = collection(db, 'sessions');
+  let snapshot;
+  try {
+    snapshot = await getDocsFromServer(colRef);
+  } catch (err) {
+    console.warn('getDocsFromServer failed, trying getDocs fallback:', err);
+    snapshot = await getDocs(colRef);
+  }
+
+  const list: CountSession[] = [];
+  snapshot.forEach((d) => {
+    const data = d.data() as CountSession;
+    const normalizedStatus: CountSession['status'] =
+      data.status === 'Divergência' ? 'Concluída' : data.status;
+    list.push({ ...data, id: d.id, status: normalizedStatus });
+  });
+
+  list.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  return list;
 }
 
 export async function saveSessionToFirestore(session: CountSession): Promise<void> {

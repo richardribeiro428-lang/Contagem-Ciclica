@@ -19,6 +19,7 @@ import { CountSession, InventoryItem, ProductPrice, SkuConversion } from './type
 import { CheckCircle2, UserCheck } from 'lucide-react';
 import {
   subscribeToSessions,
+  fetchSessionsDirectly,
   saveSessionToFirestore,
   deleteSessionFromFirestore,
   subscribeToInventoryTypes,
@@ -38,7 +39,18 @@ import {
 
 export default function App() {
   // Navigation mode: 'portal' (Tela Inicial) | 'mobile_contagem' (Entrada do Celular) | 'admin' (Painel PC) | 'counting' (Execução da Contagem)
-  const [currentMode, setCurrentMode] = useState<'portal' | 'mobile_contagem' | 'admin' | 'counting'>('portal');
+  // Restores previously open mode (e.g. mobile_contagem on phone) so page reloads stay on the correct screen
+  const [currentMode, setCurrentMode] = useState<'portal' | 'mobile_contagem' | 'admin' | 'counting'>(() => {
+    try {
+      const saved = localStorage.getItem('ceva_current_mode');
+      if (saved && ['portal', 'mobile_contagem', 'admin'].includes(saved)) {
+        return saved as 'portal' | 'mobile_contagem' | 'admin';
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return 'portal';
+  });
   const [returnMode, setReturnMode] = useState<'admin' | 'mobile_contagem'>('mobile_contagem');
 
   // Sub-view inside Administração (PC): 'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes'
@@ -119,13 +131,16 @@ export default function App() {
   // 1. Subscribe to Firestore Sessions
   useEffect(() => {
     const unsubscribe = subscribeToSessions((updatedSessions) => {
-      if (updatedSessions && updatedSessions.length > 0) {
+      if (Array.isArray(updatedSessions)) {
         setSessions(updatedSessions);
         try {
           localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedSessions));
         } catch (e) {
           console.error(e);
         }
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        setLastSyncTime(`Atualizado às ${timeStr}`);
       }
     });
     return () => unsubscribe();
@@ -170,18 +185,51 @@ export default function App() {
     }
   }, [currentOperator]);
 
+  // Persist current navigation mode so browser refresh keeps the user on the same screen (e.g. mobile_contagem on phone)
+  useEffect(() => {
+    try {
+      if (currentMode && currentMode !== 'counting') {
+        localStorage.setItem('ceva_current_mode', currentMode);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [currentMode]);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleForceSync = () => {
+  // Real synchronization: queries Firestore directly from server and pulls new contagens
+  const handleForceSync = async (forceFullReload = false) => {
+    if (forceFullReload) {
+      window.location.reload();
+      return;
+    }
+
     setIsSyncing(true);
-    setTimeout(() => {
+    try {
+      const freshSessions = await fetchSessionsDirectly();
+      if (Array.isArray(freshSessions)) {
+        setSessions(freshSessions);
+        try {
+          localStorage.setItem('ceva_inventory_sessions', JSON.stringify(freshSessions));
+        } catch (e) {
+          console.error(e);
+        }
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        setLastSyncTime(`Atualizado às ${timeStr}`);
+        showToast(`Sincronizado com o computador! (${freshSessions.length} contagens no sistema)`);
+      }
+    } catch (err) {
+      console.error('Erro ao sincronizar contagens diretamente:', err);
+      showToast('Recarregando página para sincronizar...');
+      window.location.reload();
+    } finally {
       setIsSyncing(false);
-      setLastSyncTime('Sincronizado agora');
-      showToast('Banco de dados sincronizado com sucesso!');
-    }, 800);
+    }
   };
 
   // Called when user clicks "Startar Contagem" in NovaContagemModal
@@ -462,6 +510,8 @@ export default function App() {
             setCurrentMode('mobile_contagem');
           }}
           activeCountsCount={activeCountsCount}
+          onRefresh={() => handleForceSync(false)}
+          isSyncing={isSyncing}
         />
       )}
 
@@ -486,6 +536,10 @@ export default function App() {
           onBackToHome={() => setCurrentMode('portal')}
           onOpenDetailsModal={(sess) => setSelectedSessionForDetails(sess)}
           onUpdateStatus={handleUpdateSessionStatus}
+          onRefresh={() => handleForceSync(false)}
+          onReloadPage={() => handleForceSync(true)}
+          isSyncing={isSyncing}
+          lastSyncTime={lastSyncTime}
         />
       )}
 

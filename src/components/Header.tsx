@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Smartphone } from 'lucide-react';
+import { Menu, Smartphone, RotateCw } from 'lucide-react';
 
 interface HeaderProps {
   onToggleMobileSidebar: () => void;
@@ -11,6 +11,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onToggleMobileSidebar,
+  onForceSync,
+  isSyncing,
+  lastSyncTime,
   onOpenMobileEntry,
 }) => {
   return (
@@ -38,8 +41,23 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* Right side: Entrada Celular Button */}
+      {/* Right side: Sync & Entrada Celular Buttons */}
       <div className="flex items-center gap-2 sm:gap-3">
+        {onForceSync && (
+          <button
+            type="button"
+            onClick={onForceSync}
+            disabled={isSyncing}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-semibold transition-all cursor-pointer"
+            title="Sincronizar com celulares em tempo real"
+          >
+            <RotateCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-emerald-600' : 'text-slate-500'}`} />
+            <span className="hidden md:inline">
+              {isSyncing ? 'Sincronizando...' : 'Sincronizar'}
+            </span>
+          </button>
+        )}
+
         {onOpenMobileEntry && (
           <button
             type="button"

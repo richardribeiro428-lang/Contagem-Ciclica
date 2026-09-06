@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor, Smartphone, Boxes, LayoutDashboard, ArrowRight, CheckCircle2, ScanLine } from 'lucide-react';
+import { Monitor, Smartphone, Boxes, LayoutDashboard, ArrowRight, CheckCircle2, ScanLine, RotateCw } from 'lucide-react';
 import { mobileAppIconUrl } from '../mockData';
 import { CevaLogo } from './CevaLogo';
 
@@ -7,12 +7,16 @@ interface TelaInicialProps {
   onSelectAdmin: () => void;
   onSelectColetor: () => void;
   activeCountsCount: number;
+  onRefresh?: () => void;
+  isSyncing?: boolean;
 }
 
 export const TelaInicial: React.FC<TelaInicialProps> = ({
   onSelectAdmin,
   onSelectColetor,
   activeCountsCount,
+  onRefresh,
+  isSyncing = false,
 }) => {
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-[#0b1c30] flex flex-col justify-between antialiased">
@@ -158,14 +162,32 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
       </div>
 
       {/* Footer */}
-      <footer className="w-full border-t border-slate-200 bg-white py-4 px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between max-w-5xl mx-auto">
+      <footer className="w-full border-t border-slate-200 bg-white py-4 px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between max-w-5xl mx-auto gap-2">
         <div className="flex items-center gap-2">
           <span className="font-semibold text-slate-700">CEVA Logistics Brasil</span>
           <span>•</span>
           <span>Inventário Operacional</span>
         </div>
-        <div className="text-[11px] text-slate-400 mt-1 sm:mt-0">
-          Versão 2.4.0
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-1 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span className="font-semibold">Nuvem em Tempo Real (PC & Celular)</span>
+          </div>
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={isSyncing}
+              className="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg border border-slate-300/80 flex items-center gap-1 transition-all cursor-pointer"
+              title="Recarregar dados do banco"
+            >
+              <RotateCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-emerald-600' : ''}`} />
+              <span>{isSyncing ? 'Atualizando...' : 'Recarregar'}</span>
+            </button>
+          )}
+          <div className="text-[11px] text-slate-400">
+            Versão 2.4.0
+          </div>
         </div>
       </footer>
     </div>
