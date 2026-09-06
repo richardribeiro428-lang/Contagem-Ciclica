@@ -1,28 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Inventory sessions collection
-    match /sessions/{sessionId} {
-      allow read, write: if true;
-    }
-
-    // Custom and default inventory types
-    match /inventoryTypes/{typeId} {
-      allow read, write: if true;
-    }
-
-    // Product unit monetary prices for divergence calculations
-    match /productPrices/{sku} {
-      allow read, write: if true;
-    }
-
-    // Pieces per box conversion factors
-    match /skuConversions/{sku} {
-      allow read, write: if true;
-    }
-
-    // Diagnostics / connection test
-    match /test/{docId} {
+    match /{document=**} {
       allow read, write: if true;
     }
   }

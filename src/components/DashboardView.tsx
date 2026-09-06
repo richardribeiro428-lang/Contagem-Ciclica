@@ -204,7 +204,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-col">
             <h2 className="text-lg font-bold text-slate-900">Contagens Recentes</h2>
             <p className="text-xs text-slate-500">
-              Últimas sessões de contagem criadas e gerenciadas no WMS
+              Últimas sessões de contagem criadas e gerenciadas no sistema
             </p>
           </div>
 

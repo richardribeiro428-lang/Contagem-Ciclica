@@ -16,11 +16,11 @@ export const DetalhesContagemModal: React.FC<DetalhesContagemModalProps> = ({
   if (!session) return null;
 
   const exportCSV = () => {
-    const headers = 'SKU;Nome;Lote;Localizacao;Esperado;Contado;Divergencia;Status\n';
+    const headers = 'SKU;Nome;Localizacao;Esperado;Contado;Divergencia;Status\n';
     const rows = session.items
       .map(
         (it) =>
-          `"${it.sku}";"${it.name}";"${it.batch}";"${it.location}";${it.expectedQty};${it.countedQty};${
+          `"${it.sku}";"${it.name || ''}";"${it.location}";${it.expectedQty};${it.countedQty};${
             it.countedQty - it.expectedQty
           };"${it.status}"`
       )
@@ -50,7 +50,7 @@ export const DetalhesContagemModal: React.FC<DetalhesContagemModalProps> = ({
             </span>
             <div>
               <h3 className="font-bold text-base sm:text-lg">{session.name}</h3>
-              <p className="text-xs text-slate-300">Auditoria física de inventário WMS</p>
+              <p className="text-xs text-slate-300">Auditoria física de inventário</p>
             </div>
           </div>
           <button
@@ -104,7 +104,7 @@ export const DetalhesContagemModal: React.FC<DetalhesContagemModalProps> = ({
           {/* Quick Metrics */}
           <div className="grid grid-cols-3 gap-3">
             <div className="p-3 bg-blue-50/70 border border-blue-100 rounded-xl text-center">
-              <span className="text-[11px] text-blue-700 font-semibold uppercase">Esperado WMS</span>
+              <span className="text-[11px] text-blue-700 font-semibold uppercase">Qtd Sistêmica</span>
               <div className="text-xl font-bold text-blue-950 mt-0.5">{totalExpected} UN</div>
             </div>
             <div className="p-3 bg-emerald-50/70 border border-emerald-100 rounded-xl text-center">
@@ -128,9 +128,9 @@ export const DetalhesContagemModal: React.FC<DetalhesContagemModalProps> = ({
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-100 text-slate-600 uppercase font-semibold">
                   <tr>
-                    <th className="py-2.5 px-3">Item / Foto</th>
-                    <th className="py-2.5 px-3">Local / Lote</th>
-                    <th className="py-2.5 px-2 text-center">WMS</th>
+                    <th className="py-2.5 px-3">Item / SKU</th>
+                    <th className="py-2.5 px-3">Localização</th>
+                    <th className="py-2.5 px-2 text-center">Sistêmica</th>
                     <th className="py-2.5 px-2 text-center">Físico</th>
                     <th className="py-2.5 px-2 text-center">Dif.</th>
                     <th className="py-2.5 px-3 text-right">Status</th>
@@ -149,25 +149,32 @@ export const DetalhesContagemModal: React.FC<DetalhesContagemModalProps> = ({
                               <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
                                 <img
                                   src={item.imageUrl}
-                                  alt={item.name}
+                                  alt={item.name || item.sku}
                                   className="w-full h-full object-cover"
                                   referrerPolicy="no-referrer"
                                 />
                               </div>
                             ) : (
-                              <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 font-mono text-[10px] font-bold shrink-0">
+                              <div className="w-10 h-10 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-mono text-[10px] font-bold shrink-0">
                                 SKU
                               </div>
                             )}
                             <div>
-                              <p className="font-semibold text-slate-900 leading-tight">{item.name}</p>
-                              <p className="text-[11px] font-mono text-slate-500">{item.sku}</p>
+                              {item.name &&
+                              !item.name.toLowerCase().includes(item.sku.toLowerCase()) &&
+                              !item.name.toLowerCase().startsWith('item sku') ? (
+                                <>
+                                  <p className="font-semibold text-slate-900 leading-tight">{item.name}</p>
+                                  <p className="text-[11px] font-mono font-bold text-slate-600">SKU: {item.sku}</p>
+                                </>
+                              ) : (
+                                <p className="font-mono font-bold text-slate-900 text-xs">SKU: {item.sku}</p>
+                              )}
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 px-3 text-slate-600">
-                          <p className="font-medium">{item.location}</p>
-                          <p className="text-[10px] text-slate-400 font-mono">{item.batch}</p>
+                        <td className="py-3 px-3 text-slate-700 font-medium font-mono">
+                          {item.location}
                         </td>
                         <td className="py-3 px-2 text-center font-semibold text-slate-700">
                           {item.expectedQty}

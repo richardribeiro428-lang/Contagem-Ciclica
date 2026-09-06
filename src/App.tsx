@@ -10,7 +10,8 @@ import { ContagemExecucaoView } from './components/ContagemExecucaoView';
 import { NovaContagemModal } from './components/NovaContagemModal';
 import { DetalhesContagemModal } from './components/DetalhesContagemModal';
 import { EntradaCelularContagens } from './components/EntradaCelularContagens';
-import { SapFioriBoticarioView } from './components/SapFioriBoticarioView';
+import { ImportarValoresView } from './components/ImportarValoresView';
+import { ConversaoCaixasView } from './components/ConversaoCaixasView';
 import { INITIAL_ITEMS, INITIAL_SESSIONS } from './mockData';
 import { CountSession, InventoryItem, ProductPrice, SkuConversion } from './types';
 import { CheckCircle2, UserCheck } from 'lucide-react';
@@ -22,8 +23,12 @@ import {
   addInventoryTypeToFirestore,
   subscribeToProductPrices,
   saveProductPricesBatch,
+  deleteProductPriceFromFirestore,
+  clearAllProductPricesFromFirestore,
   subscribeToSkuConversions,
   saveSkuConversionsBatch,
+  deleteSkuConversionFromFirestore,
+  clearAllSkuConversionsFromFirestore,
   DEFAULT_INVENTORY_TYPES,
   DEFAULT_PRODUCT_PRICES,
   DEFAULT_SKU_CONVERSIONS
@@ -34,8 +39,8 @@ export default function App() {
   const [currentMode, setCurrentMode] = useState<'portal' | 'mobile_contagem' | 'admin' | 'counting'>('portal');
   const [returnMode, setReturnMode] = useState<'admin' | 'mobile_contagem'>('mobile_contagem');
 
-  // Sub-view inside Administração (PC): 'dashboard' | 'contagens' | 'graficos' | 'sap_fiori'
-  const [adminView, setAdminView] = useState<'dashboard' | 'contagens' | 'graficos' | 'sap_fiori'>('dashboard');
+  // Sub-view inside Administração (PC): 'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes'
+  const [adminView, setAdminView] = useState<'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes'>('dashboard');
 
   // Active session being counted in physical counting view
   const [activeCountingSession, setActiveCountingSession] = useState<CountSession | null>(null);
@@ -49,7 +54,14 @@ export default function App() {
   const [sessions, setSessions] = useState<CountSession[]>(() => {
     try {
       const saved = localStorage.getItem('ceva_inventory_sessions');
-      return saved ? JSON.parse(saved) : INITIAL_SESSIONS;
+      if (saved) {
+        const parsed: CountSession[] = JSON.parse(saved);
+        return parsed.map((s) => ({
+          ...s,
+          status: s.status === 'Divergência' ? 'Concluída' : s.status,
+        }));
+      }
+      return INITIAL_SESSIONS;
     } catch {
       return INITIAL_SESSIONS;
     }
@@ -220,21 +232,52 @@ export default function App() {
     newStatus: CountSession['status']
   ) => {
     const updated = sessions.find((s) => s.id === sessionId);
-    if (updated) {
-      const newObj = { ...updated, status: newStatus };
-      setSessions((prev) =>
-        prev.map((s) => (s.id === sessionId ? newObj : s))
-      );
-      if (selectedSessionForDetails?.id === sessionId) {
-        setSelectedSessionForDetails(newObj);
-      }
-      try {
-        await saveSessionToFirestore(newObj);
-      } catch (e) {
-        console.error(e);
-      }
+    if (!updated) return;
+
+    // When marking as Concluída, ensure all items are marked as counted
+    const finalizedItems = newStatus === 'Concluída'
+      ? updated.items.map((it) => ({
+          ...it,
+          countedQty: it.countedQty !== undefined && it.countedQty > 0 ? it.countedQty : (it.status === 'ok' ? it.expectedQty : it.countedQty || 0),
+          status: (it.status === 'pending' || !it.status ? ((it.countedQty || 0) === (it.expectedQty || 0) ? 'ok' : 'divergent') : it.status) as InventoryItem['status'],
+        }))
+      : updated.items;
+
+    const totalCounted = finalizedItems.reduce((acc, it) => acc + (it.countedQty || 0), 0);
+    const totalExpected = finalizedItems.reduce((acc, it) => acc + (it.expectedQty || 0), 0);
+    const accuracy =
+      totalExpected > 0
+        ? Math.min(100, Math.round((Math.min(totalCounted, totalExpected) / totalExpected) * 100))
+        : 100;
+
+    const newObj: CountSession = {
+      ...updated,
+      status: newStatus,
+      items: finalizedItems,
+      accuracy,
+    };
+
+    setSessions((prev) =>
+      prev.map((s) => (s.id === sessionId ? newObj : s))
+    );
+
+    if (selectedSessionForDetails?.id === sessionId) {
+      setSelectedSessionForDetails(newObj);
     }
-    showToast(`Status atualizado para "${newStatus}".`);
+
+    try {
+      const updatedList = sessions.map((s) => (s.id === sessionId ? newObj : s));
+      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedList));
+      await saveSessionToFirestore(newObj);
+    } catch (e) {
+      console.error('Error updating session status in Firestore:', e);
+    }
+
+    if (newStatus === 'Concluída') {
+      showToast(`Contagem "${newObj.name}" finalizada e concluída com sucesso!`);
+    } else {
+      showToast(`Status atualizado para "${newStatus}".`);
+    }
   };
 
   // Start physical counting interface for a given session (with option to resume)
@@ -244,34 +287,6 @@ export default function App() {
     setCurrentMode('counting');
   };
 
-  // Update session SAP Fiori sync status
-  const handleUpdateSessionSapStatus = async (
-    sessionId: string,
-    sapSyncStatus: 'sincronizado' | 'pendente' | 'erro'
-  ) => {
-    let updatedObj: CountSession | null = null;
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id === sessionId) {
-          updatedObj = {
-            ...s,
-            sapSyncStatus,
-            sapLastSyncAt: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-          };
-          return updatedObj;
-        }
-        return s;
-      })
-    );
-    if (updatedObj) {
-      try {
-        await saveSessionToFirestore(updatedObj);
-      } catch (e) {
-        console.error('Failed to update SAP status', e);
-      }
-    }
-  };
-
   // Save count from ContagemExecucaoView (preserves pause/resume position & conversions)
   const handleSaveCountFromExecution = async (
     sessionId: string,
@@ -279,6 +294,9 @@ export default function App() {
     newStatus: CountSession['status'],
     lastIndex?: number
   ) => {
+    const existing = sessions.find((s) => s.id === sessionId) || activeCountingSession;
+    if (!existing) return;
+
     const totalCounted = updatedItems.reduce((acc, it) => acc + (it.countedQty || 0), 0);
     const totalExpected = updatedItems.reduce((acc, it) => acc + (it.expectedQty || 0), 0);
     const accuracy =
@@ -286,33 +304,37 @@ export default function App() {
         ? Math.min(100, Math.round((Math.min(totalCounted, totalExpected) / totalExpected) * 100))
         : 100;
 
-    let updatedSessionObj: CountSession | null = null;
+    const updatedSessionObj: CountSession = {
+      ...existing,
+      items: updatedItems,
+      status: newStatus,
+      accuracy,
+      lastPositionIndex: lastIndex !== undefined ? lastIndex : existing.lastPositionIndex,
+    };
 
     setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id === sessionId) {
-          updatedSessionObj = {
-            ...s,
-            items: updatedItems,
-            status: newStatus,
-            accuracy,
-            lastPositionIndex: lastIndex !== undefined ? lastIndex : s.lastPositionIndex,
-          };
-          return updatedSessionObj;
-        }
-        return s;
-      })
+      prev.map((s) => (s.id === sessionId ? updatedSessionObj : s))
     );
 
-    if (updatedSessionObj) {
-      try {
-        await saveSessionToFirestore(updatedSessionObj);
-      } catch (e) {
-        console.error('Failed to save execution to Firestore', e);
-      }
+    if (selectedSessionForDetails?.id === sessionId) {
+      setSelectedSessionForDetails(updatedSessionObj);
     }
 
-    showToast(`Contagem gravada no banco de dados! Status: ${newStatus}`);
+    try {
+      const updatedList = sessions.map((s) => (s.id === sessionId ? updatedSessionObj : s));
+      localStorage.setItem('ceva_inventory_sessions', JSON.stringify(updatedList));
+      await saveSessionToFirestore(updatedSessionObj);
+    } catch (e) {
+      console.error('Failed to save execution to Firestore', e);
+    }
+
+    if (newStatus === 'Concluída') {
+      showToast(`Contagem "${updatedSessionObj.name}" finalizada como Concluída!`);
+    } else if (newStatus === 'Pendente') {
+      showToast(`Contagem mantida como Pendente.`);
+    } else {
+      showToast(`Contagem em andamento atualizada no banco de dados.`);
+    }
   };
 
   // Add new inventory type
@@ -339,6 +361,32 @@ export default function App() {
     showToast(`${prices.length} preços atualizados no banco de dados!`);
   };
 
+  // Clear all product prices
+  const handleClearAllProductPrices = async () => {
+    try {
+      await clearAllProductPricesFromFirestore();
+      setProductPrices({});
+      showToast('Todos os valores de SKUs foram apagados do banco de dados.');
+    } catch (e) {
+      console.error('Erro ao apagar valores:', e);
+      showToast('Erro ao apagar valores do banco de dados.');
+    }
+  };
+
+  // Delete single product price
+  const handleDeleteProductPrice = async (sku: string) => {
+    try {
+      await deleteProductPriceFromFirestore(sku);
+      const copy = { ...productPrices };
+      delete copy[sku.toLowerCase()];
+      setProductPrices(copy);
+      showToast(`SKU ${sku} removido da tabela de preços.`);
+    } catch (e) {
+      console.error('Erro ao deletar SKU:', e);
+      showToast('Erro ao remover SKU do banco de dados.');
+    }
+  };
+
   // Save SKU conversions batch from Excel (peças por caixa)
   const handleSaveSkuConversions = async (conversions: SkuConversion[]) => {
     await saveSkuConversionsBatch(conversions);
@@ -348,6 +396,32 @@ export default function App() {
     });
     setSkuConversions(newMap);
     showToast(`${conversions.length} regras de peças/caixa atualizadas no banco de dados!`);
+  };
+
+  // Clear all SKU conversions
+  const handleClearAllSkuConversions = async () => {
+    try {
+      await clearAllSkuConversionsFromFirestore();
+      setSkuConversions({});
+      showToast('Todas as regras de caixas/peças foram apagadas do banco de dados.');
+    } catch (e) {
+      console.error('Erro ao apagar conversões:', e);
+      showToast('Erro ao apagar conversões do banco de dados.');
+    }
+  };
+
+  // Delete single SKU conversion
+  const handleDeleteSkuConversion = async (sku: string) => {
+    try {
+      await deleteSkuConversionFromFirestore(sku);
+      const copy = { ...skuConversions };
+      delete copy[sku.toLowerCase()];
+      setSkuConversions(copy);
+      showToast(`SKU ${sku} removido da tabela de conversão.`);
+    } catch (e) {
+      console.error('Erro ao deletar conversão:', e);
+      showToast('Erro ao remover SKU do banco de dados.');
+    }
   };
 
   // Handle entry from Portal to Contagens with operator request
@@ -407,11 +481,9 @@ export default function App() {
             }
           }}
           onStartCounting={(sess) => handleStartCounting(sess, 'mobile_contagem')}
-          onNavigateToAdmin={() => {
-            setCurrentMode('admin');
-            setAdminView('contagens');
-          }}
+          onBackToHome={() => setCurrentMode('portal')}
           onOpenDetailsModal={(sess) => setSelectedSessionForDetails(sess)}
+          onUpdateStatus={handleUpdateSessionStatus}
         />
       )}
 
@@ -430,7 +502,7 @@ export default function App() {
         />
       )}
 
-      {/* 4. ADMINISTRAÇÃO (PC) - Dashboard, Contagens, Gráficos e Integração SAP Fiori */}
+      {/* 4. ADMINISTRAÇÃO (PC) - Dashboard, Contagens e Gráficos */}
       {currentMode === 'admin' && (
         <div className="flex flex-1">
           {/* Sidebar Navigation */}
@@ -516,17 +588,37 @@ export default function App() {
                   </motion.div>
                 )}
 
-                {adminView === 'sap_fiori' && (
+                {adminView === 'valores' && (
                   <motion.div
-                    key="sap_fiori"
+                    key="valores"
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
                     transition={{ duration: 0.18 }}
                   >
-                    <SapFioriBoticarioView
-                      sessions={sessions}
-                      onUpdateSessionSapStatus={handleUpdateSessionSapStatus}
+                    <ImportarValoresView
+                      productPrices={productPrices}
+                      onSaveProductPrices={handleSaveProductPrices}
+                      onClearAllPrices={handleClearAllProductPrices}
+                      onDeletePrice={handleDeleteProductPrice}
+                      showToast={showToast}
+                    />
+                  </motion.div>
+                )}
+
+                {adminView === 'conversoes' && (
+                  <motion.div
+                    key="conversoes"
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.18 }}
+                  >
+                    <ConversaoCaixasView
+                      skuConversions={skuConversions}
+                      onSaveSkuConversions={handleSaveSkuConversions}
+                      onClearAllConversions={handleClearAllSkuConversions}
+                      onDeleteConversion={handleDeleteSkuConversion}
                       showToast={showToast}
                     />
                   </motion.div>

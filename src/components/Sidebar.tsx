@@ -5,15 +5,15 @@ import {
   Boxes,
   TrendingUp,
   X,
-  Warehouse,
-  Building2,
-  Smartphone
+  Smartphone,
+  DollarSign,
+  Package
 } from 'lucide-react';
 import { SYSTEM_IMAGES } from '../mockData';
 
 interface SidebarProps {
-  currentView: 'dashboard' | 'contagens' | 'graficos' | 'sap_fiori';
-  onSelectView: (view: 'dashboard' | 'contagens' | 'graficos' | 'sap_fiori') => void;
+  currentView: 'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes';
+  onSelectView: (view: 'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes') => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   contagensCount: number;
@@ -50,14 +50,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       badge: null,
     },
     {
-      id: 'sap_fiori' as const,
-      label: 'SAP Fiori Boticário',
-      icon: Building2,
-      badge: 'F1804',
+      id: 'valores' as const,
+      label: 'Importar Valores (R$)',
+      icon: DollarSign,
+      badge: null,
+    },
+    {
+      id: 'conversoes' as const,
+      label: 'Conversão Caixas / Peças',
+      icon: Package,
+      badge: null,
     },
   ];
 
-  const handleNavClick = (id: 'dashboard' | 'contagens' | 'graficos' | 'sap_fiori') => {
+  const handleNavClick = (id: 'dashboard' | 'contagens' | 'graficos' | 'valores' | 'conversoes') => {
     onSelectView(id);
     onCloseMobile();
   };
@@ -168,24 +174,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onOpenMobileEntry();
                 onCloseMobile();
               }}
-              className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <Smartphone className="w-4 h-4" />
               <span>Abrir Entrada Celular</span>
             </button>
           )}
-
-          {/* Cloud Database Connected Status */}
-          <div className="bg-white/5 rounded-lg p-2.5 flex items-center justify-between">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-slate-400 font-medium">Banco de Dados</span>
-              <span className="text-xs font-semibold text-white">Firestore Conectado</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-[10px] text-emerald-400 font-bold uppercase">Online</span>
-            </div>
-          </div>
         </div>
       </aside>
     </>

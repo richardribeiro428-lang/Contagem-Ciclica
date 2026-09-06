@@ -63,14 +63,16 @@ export const ContagensView: React.FC<ContagensViewProps> = ({
   const countPendentes = baseSessions.filter(
     (s) => s.status === 'Pendente' || s.status === 'Em Andamento'
   ).length;
-  const countConcluidas = baseSessions.filter((s) => s.status === 'Concluída').length;
+  const countConcluidas = baseSessions.filter(
+    (s) => s.status === 'Concluída' || s.status === 'Divergência'
+  ).length;
   const countDivergentes = baseSessions.filter((s) => s.status === 'Divergência').length;
 
   // Filtered by selected tab: When session changes to 'Concluída', it immediately exits 'pendente' and enters 'concluida'
   const filteredSessions = baseSessions.filter((s) => {
     if (statusTab === 'all') return true;
     if (statusTab === 'pendente') return s.status === 'Pendente' || s.status === 'Em Andamento';
-    if (statusTab === 'concluida') return s.status === 'Concluída';
+    if (statusTab === 'concluida') return s.status === 'Concluída' || s.status === 'Divergência';
     if (statusTab === 'divergente') return s.status === 'Divergência';
     return true;
   });
@@ -92,10 +94,10 @@ export const ContagensView: React.FC<ContagensViewProps> = ({
   };
 
   const tabsConfig = [
-    { id: 'all' as const, label: 'Todas', count: countAll },
     { id: 'pendente' as const, label: 'Pendentes / Em Andamento', count: countPendentes },
     { id: 'concluida' as const, label: 'Concluídas', count: countConcluidas },
     { id: 'divergente' as const, label: 'Divergências', count: countDivergentes },
+    { id: 'all' as const, label: 'Todas', count: countAll },
   ];
 
   return (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Monitor, Smartphone, Boxes, LayoutDashboard, ArrowRight, ShieldCheck, CheckCircle2, Barcode } from 'lucide-react';
+import { Monitor, Smartphone, Boxes, LayoutDashboard, ArrowRight, CheckCircle2, ScanLine } from 'lucide-react';
 import { SYSTEM_IMAGES, mobileAppIconUrl } from '../mockData';
 
 interface TelaInicialProps {
@@ -34,8 +34,8 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
           </div>
 
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white shadow-xs border border-slate-200 text-slate-700 text-xs font-semibold mb-3">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-emerald-700 font-bold">WMS Conectado</span>
+            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+            <span className="text-slate-800 font-bold">Sistema de Inventário</span>
             <span className="text-slate-300">•</span>
             <span className="text-slate-600">Auditoria & Contagem Física</span>
           </div>
@@ -69,7 +69,7 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
                 Administração (PC)
               </h2>
               <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
-                Ambiente de supervisão onde <strong>criamos novas contagens</strong>, importamos planilhas do Excel, definimos peças por caixa, analisamos gráficos de divergência e gerenciamos a integração com o <strong>SAP Fiori Grupo Boticário</strong>.
+                Ambiente de supervisão onde <strong>criamos novas contagens</strong>, importamos planilhas do Excel, definimos peças por caixa e analisamos relatórios de divergência.
               </p>
 
               {/* Feature Points */}
@@ -79,12 +79,12 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
                   <span><strong>Criar Contagens:</strong> Colar dados do Excel (Posição, SKU, Quantidade)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>SAP Fiori Boticário:</strong> Reconciliação e layout oficial F1804 / MI04</span>
+                  <ScanLine className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span><strong>Conferência por Bipagem:</strong> Validação de código de barras físico</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <LayoutDashboard className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span><strong>Gráficos:</strong> Ranking de operadores e divergências financeiras (R$)</span>
+                  <span><strong>Gráficos:</strong> Ranking de operadores e divergências de estoque</span>
                 </div>
               </div>
             </div>
@@ -135,22 +135,22 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
                 )}
               </div>
               <p className="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">
-                Acesso exclusivo para <strong>execução no celular</strong>. Solicita o seu nome para carregar apenas as suas contagens ou permite ver todas as contagens pendentes do depósito.
+                Acesso exclusivo para <strong>execução no celular ou coletor</strong>. Solicita o seu nome para carregar apenas as suas contagens ou permite ver todas as contagens pendentes.
               </p>
 
               {/* Feature Points */}
               <div className="mt-5 space-y-2.5 pt-4 border-t border-slate-100 text-xs text-slate-600">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span><strong>Identificação Rápida:</strong> Insira seu nome ou selecione com 1 toque</span>
+                  <span><strong>Identificação Rápida:</strong> Insira seu nome ou filtre por operador</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Boxes className="w-4 h-4 text-blue-600 shrink-0" />
-                  <span><strong>Opção Ver Todas:</strong> Visualize todas as contagens abertas</span>
+                  <ScanLine className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span><strong>Bipagem de Código:</strong> Validação de 5 últimos dígitos menos o último</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Smartphone className="w-4 h-4 text-purple-600 shrink-0" />
-                  <span><strong>Layout Celular:</strong> Teclado numérico tátil e conversor caixas/peças</span>
+                  <span><strong>Digitação Direta:</strong> Insira quantidades pelo teclado físico do coletor</span>
                 </div>
               </div>
             </div>
@@ -175,10 +175,10 @@ export const TelaInicial: React.FC<TelaInicialProps> = ({
         <div className="flex items-center gap-2">
           <span className="font-semibold text-slate-700">CEVA Logistics Brasil</span>
           <span>•</span>
-          <span>WMS 5G Enterprise</span>
+          <span>Inventário Operacional</span>
         </div>
         <div className="text-[11px] text-slate-400 mt-1 sm:mt-0">
-          Terminal Ativo: WMS-SP-01 • Versão 2.4.0
+          Versão 2.4.0
         </div>
       </footer>
     </div>
