@@ -17,8 +17,7 @@ import {
   X,
   Check,
   Copy,
-  ShieldCheck,
-  PlusSquare
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CountSession } from '../types';
@@ -33,7 +32,6 @@ interface EntradaCelularContagensProps {
   onBackToHome: () => void;
   onOpenDetailsModal?: (session: CountSession) => void;
   onUpdateStatus?: (sessionId: string, newStatus: CountSession['status']) => void;
-  onOpenAdicionarAtalho?: () => void;
 }
 
 export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = ({
@@ -43,7 +41,6 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
   onStartCounting,
   onBackToHome,
   onUpdateStatus,
-  onOpenAdicionarAtalho,
 }) => {
   // Starts directly on 'todas' so all counts are immediately visible on entrance
   const [statusFilter, setStatusFilter] = useState<'todas' | 'pendente' | 'andamento' | 'concluida'>('todas');
@@ -133,19 +130,8 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
             </div>
           </div>
 
-          {/* Buttons: Add shortcut & Return to Home */}
+          {/* Button: Return to Home */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {onOpenAdicionarAtalho && (
-              <button
-                type="button"
-                onClick={onOpenAdicionarAtalho}
-                className="text-xs font-bold text-blue-200 hover:text-white bg-blue-600/30 hover:bg-blue-600/50 border border-blue-400/30 px-2.5 py-1.5 rounded-xl transition-colors flex items-center gap-1 cursor-pointer shrink-0"
-                title="Adicionar atalho na tela inicial do celular"
-              >
-                <PlusSquare className="w-3.5 h-3.5 text-blue-300" />
-                <span className="hidden xs:inline">Atalho</span>
-              </button>
-            )}
             <button
               type="button"
               onClick={onBackToHome}
@@ -162,23 +148,11 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
       {/* Main Container */}
       <main className="max-w-md mx-auto w-full px-3 sm:px-4 py-3 flex-1 flex flex-col gap-3">
         {/* Corporate Safe Notice */}
-        <div className="bg-[#14202e] text-slate-300 rounded-xl px-3 py-2 text-[11px] flex items-center justify-between border border-slate-700/60 shadow-xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="truncate">
-              <strong>Modo Corporativo:</strong> Ao segurar, aparece apenas <strong>Copiar</strong>.
-            </span>
-          </div>
-          {onOpenAdicionarAtalho && (
-            <button
-              type="button"
-              onClick={onOpenAdicionarAtalho}
-              className="text-blue-300 hover:text-white font-bold text-[10px] shrink-0 ml-2 cursor-pointer flex items-center gap-1 bg-blue-500/20 hover:bg-blue-500/30 px-2 py-0.5 rounded-lg border border-blue-400/30 transition-colors"
-            >
-              <PlusSquare className="w-3 h-3 text-blue-300" />
-              <span>+ Atalho Celular</span>
-            </button>
-          )}
+        <div className="bg-[#14202e] text-slate-300 rounded-xl px-3 py-2 text-[11px] flex items-center gap-2 border border-slate-700/60 shadow-xs">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>
+            <strong>Modo Corporativo:</strong> Ao segurar, aparece apenas <strong>Copiar</strong>.
+          </span>
         </div>
 
         {/* Operator Filter Section: Quick chips so user can filter by their name */}
