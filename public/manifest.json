@@ -5,11 +5,10 @@
   "description": "Sistema de inventário e contagem CEVA Logistics para celulares e coletores industriais",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "display_override": [
-    "window-controls-overlay",
-    "standalone",
-    "fullscreen"
+    "fullscreen",
+    "standalone"
   ],
   "orientation": "portrait-primary",
   "background_color": "#0d1726",

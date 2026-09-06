@@ -12,10 +12,24 @@ input, textarea, [contenteditable="true"] {
   user-select: text;
 }
 
-/* Otimização para visual de aplicativo nativo no celular */
-html, body {
-  overscroll-behavior-y: contain;
+/* Otimização para visual de aplicativo nativo e tela cheia contínua */
+html, body, #root {
+  height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  overscroll-behavior: none !important;
+  overscroll-behavior-y: none !important;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Otimização em modo tela cheia */
+:fullscreen, :-webkit-full-screen, :-moz-full-screen {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background-color: #0b1c30;
+  overflow-x: hidden;
 }
 
 /* Suporte a tela cheia e barra de status transparente */

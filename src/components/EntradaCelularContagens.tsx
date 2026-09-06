@@ -23,7 +23,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CountSession } from '../types';
 import { SYSTEM_IMAGES, mobileAppIconUrl } from '../mockData';
 import { CevaLogo } from './CevaLogo';
-import { FullscreenToggle } from './FullscreenToggle';
 
 interface EntradaCelularContagensProps {
   sessions: CountSession[];
@@ -33,7 +32,6 @@ interface EntradaCelularContagensProps {
   onBackToHome: () => void;
   onOpenDetailsModal?: (session: CountSession) => void;
   onUpdateStatus?: (sessionId: string, newStatus: CountSession['status']) => void;
-  onOpenAppGuide?: () => void;
 }
 
 export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = ({
@@ -43,7 +41,6 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
   onStartCounting,
   onBackToHome,
   onUpdateStatus,
-  onOpenAppGuide,
 }) => {
   // Starts directly on 'todas' so all counts are immediately visible on entrance
   const [statusFilter, setStatusFilter] = useState<'todas' | 'pendente' | 'andamento' | 'concluida'>('todas');
@@ -133,17 +130,16 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
             </div>
           </div>
 
-          {/* Buttons: Fullscreen & Return to Home */}
+          {/* Button: Return to Home */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <FullscreenToggle onOpenAppGuide={onOpenAppGuide} />
             <button
               type="button"
               onClick={onBackToHome}
-              className="text-xs font-bold text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 active:bg-white/30 px-2.5 py-1.5 rounded-xl transition-colors flex items-center gap-1 cursor-pointer shrink-0"
+              className="text-xs font-bold text-slate-200 hover:text-white bg-white/10 hover:bg-white/20 active:bg-white/30 px-3 py-1.5 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
               title="Voltar para a tela inicial"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span className="hidden xs:inline">Início</span>
+              <span>Início</span>
             </button>
           </div>
         </div>
@@ -152,22 +148,11 @@ export const EntradaCelularContagens: React.FC<EntradaCelularContagensProps> = (
       {/* Main Container */}
       <main className="max-w-md mx-auto w-full px-3 sm:px-4 py-3 flex-1 flex flex-col gap-3">
         {/* Corporate Safe Notice */}
-        <div className="bg-[#14202e] text-slate-300 rounded-xl px-3 py-2 text-[11px] flex items-center justify-between border border-slate-700/60 shadow-xs">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>
-              <strong>Modo Corporativo:</strong> Ao segurar, aparece apenas <strong>Copiar</strong> (Google bloqueado).
-            </span>
-          </div>
-          {onOpenAppGuide && (
-            <button
-              type="button"
-              onClick={onOpenAppGuide}
-              className="text-blue-300 hover:text-white font-bold underline text-[10px] shrink-0 ml-2 cursor-pointer"
-            >
-              Ocultar link https
-            </button>
-          )}
+        <div className="bg-[#14202e] text-slate-300 rounded-xl px-3 py-2 text-[11px] flex items-center gap-2 border border-slate-700/60 shadow-xs">
+          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>
+            <strong>Modo Corporativo:</strong> Ao segurar, aparece apenas <strong>Copiar</strong> (Google bloqueado).
+          </span>
         </div>
 
         {/* Operator Filter Section: Quick chips so user can filter by their name */}

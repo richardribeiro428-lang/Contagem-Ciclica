@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CountSession, InventoryItem } from '../types';
-import { FullscreenToggle } from './FullscreenToggle';
 
 interface ContagemExecucaoViewProps {
   session: CountSession;
@@ -456,8 +455,6 @@ export const ContagemExecucaoView: React.FC<ContagemExecucaoViewProps> = ({
                   Peças (UN)
                 </span>
               )}
-
-              <FullscreenToggle />
 
               <button
                 type="button"
